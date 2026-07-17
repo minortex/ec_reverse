@@ -52,6 +52,63 @@ clusters with block attribution and byte previews.
 Run all offline checks with `make -C src test`. Hardware commands are never run
 by the test target.
 
+## Readable 8051 export
+
+Ghidra 12's 8051 decompiler can keep code addresses separate from EC/XRAM
+addresses.  The export helper installs register names recovered from the
+official GCU Service, then emits pseudo-C plus a static register-reference
+index:
+
+```sh
+tools/export_readable_ec.sh samples/disasm/main-bank0.bin readable-main0 \
+  - tools/ec_functions-main0.tsv
+```
+
+The bundled register vocabulary is in `tools/ec_registers.tsv`. Bank0/common
+SMBus symbols are kept in `tools/ec_functions-main0.tsv`; the default
+`tools/ec_functions.tsv` is for bank1 because equal 16-bit code addresses name
+different functions after a bank switch. Generated
+pseudo-C is an analysis aid, not buildable vendor source: indirect DPTR access,
+bank switching, tables, and incorrectly discovered function boundaries still
+require manual review.  Analyze each 64 KiB bank separately so the 8051's
+overlapping bank addresses are not conflated.
+
+For banked or force-disassembled `.d52` files without reliable entry points,
+use the conservative text annotator.  It only labels constant DPTR loads and
+therefore does not confuse an equal numeric code address with an XRAM address:
+
+```sh
+python3 tools/annotate_disassembly.py samples/disasm/main-bank1.d52 \
+  -o build/main-bank1.annotated.d52 --xrefs build/main-bank1-xrefs.md
+```
+
+Bank images without vectors can be seeded from the Keil C51 wrapper table in
+the common bank:
+
+```sh
+python3 tools/extract_bank_entries.py samples/disasm/main-bank0.bin \
+  -o build/bank-entries.json
+entries=$(python3 tools/extract_bank_entries.py samples/disasm/main-bank0.bin \
+  --entries bank1)
+tools/export_readable_ec.sh samples/disasm/main-bank1.bin \
+  build/readable-main1 "$entries"
+python3 tools/summarize_pseudoc.py \
+  build/readable-main1/main-bank1.bin.c \
+  -o build/readable-main1/semantic-index.md
+```
+
+Short, uniquely matching functions can carry their reviewed names to another
+firmware version without assuming stable addresses:
+
+```sh
+python3 tools/translate_function_symbols.py \
+  samples/disasm/main-bank1.bin build/fw210/block1.bin \
+  -o build/fw210/ec-functions.tsv
+```
+
+Evidence, version comparison, limitations, and the next symbol-recovery steps
+are documented in [`docs/readable_firmware.md`](docs/readable_firmware.md).
+
 ## Repository layout
 
 - `src/`: C source and headers only.
@@ -62,6 +119,7 @@ by the test target.
 - `samples/`: vendor inputs and generated reverse-engineering output; retained
   in Git so the analysis remains reproducible.
 - `dumps/`: machine-specific hardware reads; always ignored by Git.
+- `ref/`: reference document, it5570 datasheet.
 
 真机 JEDEC ID、1 MiB dump 布局、哈希、复位行为和 Btrfs 持久化记录见
 [`docs/hardware_validation.md`](docs/hardware_validation.md)。

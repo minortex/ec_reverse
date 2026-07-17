@@ -1,0 +1,110 @@
+# start-end<TAB>symbol<TAB>access<TAB>meaning
+#
+# Public EC/XRAM names are recovered from the official GCU Service and
+# corroborated by /home/texsd/codes/mech-forza-control/docs/ec-register-map.md.
+# A small number of internal fields are named only where firmware data flow
+# establishes their role directly. Ranges name the first byte in Ghidra; the
+# export script also emits the complete range in its register index.
+00c0-00c1	smbus_word_data	RW	Shared two-byte SMBus word-data staging buffer used by charger and battery transactions
+030e-030f	base_charge_voltage_target	R	Internal charger target copied to EC[0x0522:0x0523] before aging derating, uint16 little-endian
+0402-0403	battery_design_capacity	R	Battery design capacity, uint16 little-endian, mAh
+0404-0405	battery_last_full_capacity	R	Last full capacity, uint16 little-endian, mAh
+0408-0409	battery_design_voltage	R	Battery design voltage, uint16 little-endian, mV
+0434-0435	battery_discharge_current	R	Battery discharge current, uint16 little-endian, mA
+0436-0437	battery_remaining_capacity	R	Battery remaining capacity, uint16 little-endian, mAh
+0438-0439	battery_voltage	R	Battery voltage, uint16 little-endian, mV
+0454	ec_firmware_version	R	EC firmware version
+0456	system_id	R	Platform system identifier
+045b	silent_mode_status	R	Silent-mode status
+0464-0465	main_fan_rpm	R	Main fan tachometer, uint16
+0466	bios_info_5	R	BIOS information byte 5
+046b-046c	second_fan_rpm	R	Second fan tachometer, uint16
+0476	bios_function_flags	R	BIOS function flags
+047d	ec_sub_version_2	R	EC sub-version
+0490	power_source	R	Power-source state
+0491	battery_pack_status	R	Battery status; bits 7:6 encode a 2-, 3- or 4-cell series pack for voltage calculations
+0494	battery_alert	R	Battery alert flags
+049f	bios_info_3	R	BIOS information byte 3
+04a2-04a3	battery_temperature	R	Battery temperature, uint16 little-endian, 0.1 K
+04a6-04a7	battery_cycle_count	R	Battery cycle count, uint16 little-endian
+04ab	battery_rsoc	R	Relative state of charge, percent
+0522-0523	charge_voltage_limit	R	EC-selected battery charge-voltage limit
+0623	battery_discharge_overcurrent_level	RW	0-7 protection level raised above the battery discharge-current threshold and lowered below the 70 percent hysteresis threshold
+0704-0705	battery_trip_point	RW	ACPI BTP0 battery remaining-capacity trip point, uint16 little-endian
+0706	ap_bios_control	RW	AP/BIOS control byte
+0726	ap_oem_9	RW	Custom-mode bit 7 and AC-recovery bit 3
+0727	ap_oem_10	RW	Custom light bit 6 and PL4-double bit 7
+0740	project_id	R	Platform project identifier
+0741	ap_oem_control	RW	AP-present bit 0; also fan-alert byte
+0742	support_flags_5	R	Hardware support flags 5
+0743-0747	myfan2_or_tgp	RW	MyFan2 PWM levels or configurable-TGP fields
+0748	lightbar_control	RW	Light-bar mode flags
+0749-074b	lightbar_rgb	RW	Light-bar red, green and blue values
+074c	oem_service_project_id	R	OEM service project identifier
+074e	bios_oem_control	RW	Fn-lock bit 4
+0751	fan_power_mode	RW	Office, Gaming, Turbo, Custom and FanBoost mode selector
+0753	cpu_vrm_current_limit	RW	CPU VRM sustained-current limit, A
+0754	cpu_vrm_peak_current_limit	RW	CPU VRM peak-current limit, A
+075b	main_fan_duty	R	Main fan duty, raw value approximately percent times two
+075c	second_fan_duty	R	Second fan duty, raw value approximately percent times two
+075d	trigger_flags_2	RW	Secondary command/trigger flags
+0765	support_flags_1	R	FanBoost, light bar, Win-lock and other capabilities
+0766	support_flags_2	R	Silent mode, USB charging, RGB keyboard and battery protection
+0767	command_trigger	RW	Win-lock, USB-charge and related action trigger
+0768	command_status	R	Win-lock, FanBoost and related action status
+0769-076f	rgb_keyboard_state	RW	RGB keyboard colour and music-mode fields
+0771-0772	rom_id	R	EC ROM identifier
+0782	bios_oem_2	RW	QKey/default-mode/Fan3 support; meaning is platform dependent
+0783-0785	active_power_limits	R	Current PL1, PL2 and PL4 values
+0786	tcc_target	RW	TCC temperature target/enable or legacy MyFan3 PWM
+0787	fan_transition_time	RW	Fan transition interval or legacy MyFan3 PWM
+0788-078a	legacy_myfan3_pwm	R	Legacy MyFan3 default PWM values
+078b	gpu_dstate	RW	GPU D-state or MyFan3 GPU setting
+078c	keyboard_backlight	RW	Single-zone keyboard backlight control
+078e	support_flags_6	R	Backlight and battery-protection capability flags
+079e-07a0	fan_extra_parameters	RW	Minimum speed, minimum temperature and extra speed
+07a3	bios_oem_3	R	BIOS OEM byte 3
+07a4	ap_bios_flags	RW	AP/BIOS flags including QC Fn-lock
+07a5	ap_oem_3	RW	AP OEM byte 3
+07a6	battery_mode	RW	Battery protection mode bits 5:4; also touchpad LED on other platforms
+07a7-07aa	battery_saver_power_defaults	R	Battery-saver PL1, PL2, PL4 and D defaults
+07ab	cci_mode_index	RW	CCI mode index
+07b0-07b2	cci_mode_profiles	RW	CCI mode profiles 1 through 3
+07b9	battery_charge_limit_high	RW	Charge upper threshold, percent
+07c5	independent_fan_control	RW	Independent fan-control flags
+07c6	ap_fan_management	RW	AP fan-management enable
+07c7-07c8	ap_oem_7_8	RW	AP OEM bytes 7 and 8
+07ca	bios_oem_8	R	BIOS OEM byte 8
+07cc	complex_power_status	R	Composite power state
+07d0	battery_charge_limit_low	RW	Charge lower threshold, percent
+07d2-07d3	module_ids	R	GPU and main module identifiers
+07d8-07da	tcc_default_offsets	R	Gaming, Office and Turbo TCC offsets
+07e6-07e7	liquid_cooling_control	RW	External liquid-cooling fan and pump
+07fb	port_id_change	RW	WKD port-ID change control
+0832	charger_command_retry_flags	RW	Charger commands requested for a later retry; bits 0 and 1 select ChargingCurrent and ChargingVoltage
+0833	charger_command_active_flags	RW	Charger command work flags consumed by the SMBus queue worker
+0836-0837	queued_charge_voltage	RW	ChargingVoltage word copied from EC[0x0522:0x0523] before the charger SMBus command is queued, uint16 little-endian
+0857	debounced_gpd3_state	RW	Bit 0 is a debounced mirror of GPIO data-mirror GPD3; IT5571 D-board pin use is unverified
+0858	gpd3_debounce_counter	RW	Five-tick debounce counter for XRAM[0x0857] bit 0
+09c7	high_voltage_sample_counter	RW	Prescaler counter for the battery high-voltage stress accumulator
+09c8	high_voltage_window_counter	RW	Second-stage counter for qualified high-voltage windows
+09c9-09ca	high_voltage_stress	RW	Temperature-weighted battery high-voltage stress accumulator, uint16 big-endian
+0a54	charge_derating_aux_level	RW	Caller-seeded auxiliary derating level; remains 1 throughout the aging path in this platform build because its optional bank0 hooks are RET stubs
+0a6b	smbus_controller_index	RW	Temporary SMBus controller/channel index used by the common transaction routine
+0a6c	smbus_protocol	RW	Temporary SMBus transaction protocol/mode byte; charger word writes use 0x0C
+0a6d	smbus_slave_address	RW	Temporary 8-bit SMBus slave address; charger transactions use 0x12
+0a6e-0a71	smbus_descriptor	RW	Four-byte SMBus command/data descriptor; word transactions store command, zero, data pointer high, data pointer low
+0a73	smbus_result_code	RW	Common SMBus result sentinel: 0x00 on completion without controller error, 0xEE on timeout or controller error
+0a74	smbus_host_status	RW	Raw SMBus host-controller status captured while polling for transaction completion
+0a75	smbus_success	RW	Boolean result returned in R7 by the common SMBus transaction routine: 1 success, 0 failure
+0d00	single_zone_mode	RW	Single-zone lighting mode
+0f00-0f0f	cpu_fan_temp_up	RW	CPU fan curve rising-temperature thresholds
+0f10-0f1f	cpu_fan_temp_down	RW	CPU fan curve falling-temperature thresholds
+0f20-0f2f	cpu_fan_duty_table	RW	CPU fan duty table, raw value is percent times two
+0f30-0f3f	gpu_fan_temp_up	RW	Second/GPU fan rising-temperature thresholds
+0f40-0f4f	gpu_fan_temp_down	RW	Second/GPU fan falling-temperature thresholds
+0f50-0f5c	gpu_fan_duty_table	RW	Second/GPU fan duty table, raw value is percent times two
+0f5d	fan_table_status_1	R	RamFan1p5 table status 1
+0f5e	fan_table_status_2	R	RamFan1p5 table status 2
+0f5f	fan_table_control	RW	RamFan1p5 table apply/control byte
+1110	host_command_mailbox	RW	Host-to-EC command byte; handlers observed for 0x22, 0x23 and 0x24

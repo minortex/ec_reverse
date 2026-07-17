@@ -1,0 +1,5 @@
+# address<TAB>name<TAB>confidence<TAB>evidence
+# Common/bank0-only symbols.  Keep these separate because the same 16-bit
+# addresses name unrelated code while bank1 is selected.
+8016	recover_smbus_controller	high	Resets and reinitializes one SMBus controller after timeout or host-status error bits 0x18
+80d2	execute_smbus_transaction	high	Executes the shared polled SMBus transfer, records raw host status and returns R7=1 on success or R7=0 on timeout/controller error

@@ -1,0 +1,34 @@
+# address<TAB>name<TAB>confidence<TAB>evidence
+# Only functions whose bodies directly expose their semantics are named here.
+1d08	apply_platform_aux_derating_hooks	medium	On the aging path power_source bit 2 forces the early common tail; its two bank0 hooks are RET stubs and preserve caller-seeded R7=1, so XRAM[0x0A54] remains 1
+3196	is_charge_voltage_update_needed	high	Compares desired EC[0x0522:0x0523] with queued XRAM[0x0836:0x0837], or checks the 0x3138 fallback target when the normal battery path is inactive
+5a8e	initialize_battery_telemetry	high	Validates fuel-gauge caches, derives last-full capacity, and publishes ACPI BIF/BST battery fields
+69f6	publish_battery_cycle_count	high	Copies internal fuel-gauge cache XRAM[0x0343:0x0344] to public EC[0x04A6:0x04A7]
+863a	check_battery_trip_point	high	Compares ACPI BTP0 EC[0x0704:0x0705] with remaining capacity and raises SCI query 0x89 on a directional crossing
+8efb	service_charger_smbus_queue	high	Consumes charger command bits, issues SMBus commands 0x14/0x15 and requeues a bit when the shared word-data staging bytes differ from the queued command mirror
+8ffb	periodic_720ms_power_maintenance	high	Timer0 phase task called every 144 approximately 5-ms ticks; invokes battery voltage derating and related maintenance
+b99d	configure_on_battery_power_profile	medium	Selects platform power/performance table entries by requested profile and RSOC while running without AC
+d1d1	update_battery_aging_charge_voltage_derating	high	Accumulates temperature-weighted high-voltage stress and combines it with cycle count and battery mode to derive EC[0x0522:0x0523]
+df0b	prepare_smbus_word_descriptor	high	Builds the four-byte command descriptor at XRAM[0x0A6E:0x0A71] with data pointer 0x00C0
+df7f	is_ap_present	high	Returns EC[0x0741] bit 0 (ApExistFlag)
+df87	power_source_bit0	high	Returns EC[0x0490] bit 0; exact human state name remains platform-dependent
+df9f	fan_mode_mask_90	high	Returns EC[0x0751] masked with 0x90
+dfd6	is_custom_mode_light_enabled	high	Returns EC[0x0727] bit 6
+e010	bios_info5_bit4	high	Returns EC[0x0466] bit 4
+e0d6	bios_info3_bit1	high	Returns EC[0x049F] bit 1
+e12f	complex_power_status_bit0	high	Returns EC[0x07CC] bit 0
+e136	is_user_fan_mode	high	Returns EC[0x0751] bit 7
+e177	system_id_bit7	high	Returns EC[0x0456] bit 7; exact platform meaning remains unknown
+e181	is_ap_fan_management_enabled	high	Returns EC[0x07C6] bit 2
+e1a0	power_source_bit2	high	Returns EC[0x0490] bit 2; exact power state remains unknown
+e2b3	clear_custom_mode_flag	high	Clears EC[0x0726] bit 7 and returns zero
+e2c9	compare_smbus_word_low_with_dptr	high	XOR-compares XRAM[0x00C0] with the byte addressed by the caller's DPTR
+e2d4	compare_smbus_word_high_with_dptr	high	XOR-compares XRAM[0x00C1] with the byte addressed by the caller's DPTR
+e2dc	is_battery_below_41_percent	high	Compares EC[0x04AB] RSOC against 0x29
+e3d9	get_battery_discharge_current_low	high	Returns the first byte at EC[0x0434]
+e456	publish_main_fan_duty	high	Copies internal PWM state EC[0x1804] to public EC[0x075B]
+e45f	is_turbo_fan_mode	high	Returns EC[0x0751] bit 4
+e51c	is_independent_fan_control	high	Returns EC[0x07C5] bit 7
+e598	keyboard_backlight_bit1	high	Returns EC[0x078C] bit 1
+e5de	reset_second_fan_telemetry	high	Clears internal tachometer state and public EC[0x046B] second-fan RPM
+e952	has_rgb_keyboard	high	Returns EC[0x0766] bit 2 from the official capability map
