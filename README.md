@@ -62,3 +62,6 @@ by the test target.
 - `samples/`: vendor inputs and generated reverse-engineering output; retained
   in Git so the analysis remains reproducible.
 - `dumps/`: machine-specific hardware reads; always ignored by Git.
+
+真机 JEDEC ID、1 MiB dump 布局、哈希、复位行为和 Btrfs 持久化记录见
+[`docs/hardware_validation.md`](docs/hardware_validation.md)。
