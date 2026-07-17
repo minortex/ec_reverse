@@ -1,0 +1,63 @@
+;======================================================================
+;  SFR/address map for ITE IT5571VG-128 EC (Enhanced 8052 core)
+;  Core ISA SFRs are definitive (8052 core fixes these addresses).
+;  ITE peripheral registers are mostly reached through the
+;  indirect/data-memory space (MOVX @DPTR) at 0xXXXX, so only the
+;  architectural registers are named here. Free SFR slots used by
+;  ITE peripherals (93h,A9h,CAh,D4h,D6h,DFh,E9h,F7h,...) are unnamed.
+;======================================================================
+P0      DATA    80h
+SP      DATA    81h
+DPL     DATA    82h
+DPH     DATA    83h
+PCON    DATA    87h
+TCON    DATA    88h
+TMOD    DATA    89h
+TL0     DATA    8Ah
+TL1     DATA    8Bh
+TH0     DATA    8Ch
+TH1     DATA    8Dh
+P1      DATA    90h
+SCON    DATA    98h
+SBUF    DATA    99h
+P2      DATA    0A0h
+IE      DATA    0A8h
+P3      DATA    0B0h
+IP      DATA    0B8h
+T2CON   DATA    0C8h
+RCAP2L  DATA    0CAh
+RCAP2H  DATA    0CBh
+TL2     DATA    0CCh
+TH2     DATA    0CDh
+PSW     DATA    0D0h
+ACC     DATA    0E0h
+B       DATA    0F0h
+ET0     BIT     0A9h
+EA      BIT     0AFh
+ES      BIT     0ACh
+ET2     BIT     0ADh
+ET1     BIT     0ABh
+EX1     BIT     0AAh
+EX0     BIT     0A8h
+TF1     BIT     08Fh
+TR1     BIT     08Eh
+TF0     BIT     08Dh
+TR0     BIT     08Ch
+IE1     BIT     08Bh
+IT1     BIT     08Ah
+IE0     BIT     089h
+IT0     BIT     088h
+CY      BIT     0D7h
+AC      BIT     0D6h
+F0      BIT     0D5h
+RS1     BIT     0D4h
+RS0     BIT     0D3h
+OV      BIT     0D2h
+P       BIT     0D0h
+RESET       CODE    0
+INT0_ISR    CODE    03h
+TIMER0_ISR  CODE    0Bh
+INT1_ISR    CODE    13h
+TIMER1_ISR  CODE    1Bh
+SERIAL_ISR  CODE    23h
+TIMER2_ISR  CODE    2Bh

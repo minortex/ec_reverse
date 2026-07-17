@@ -1,0 +1,12 @@
+# C/Python build products
+/build/
+*.o
+*.d
+__pycache__/
+*.py[cod]
+
+# Hardware dumps and generated reports
+/dumps/
+/manifest.json
+/diff.json
+/split-output/
