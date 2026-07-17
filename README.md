@@ -108,6 +108,8 @@ python3 tools/translate_function_symbols.py \
 
 Evidence, version comparison, limitations, and the next symbol-recovery steps
 are documented in [`docs/readable_firmware.md`](docs/readable_firmware.md).
+The distinction between internal 64-KiB XRAM and the protected 4-KiB host
+H2RAM aperture is documented in [`docs/xram_host_access.md`](docs/xram_host_access.md).
 
 ## Repository layout
 

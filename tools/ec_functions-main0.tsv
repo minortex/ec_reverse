@@ -3,3 +3,4 @@
 # addresses name unrelated code while bank1 is selected.
 8016	recover_smbus_controller	high	Resets and reinitializes one SMBus controller after timeout or host-status error bits 0x18
 80d2	execute_smbus_transaction	high	Executes the shared polled SMBus transfer, records raw host status and returns R7=1 on success or R7=0 on timeout/controller error
+e2d7	configure_h2ram_host_windows	high	Programs SMFI HRAMW0-3 bases, sizes and read/write protection, then enables all four host-visible lower-4K DLM windows

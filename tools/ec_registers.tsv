@@ -107,4 +107,17 @@
 0f5d	fan_table_status_1	R	RamFan1p5 table status 1
 0f5e	fan_table_status_2	R	RamFan1p5 table status 2
 0f5f	fan_table_control	RW	RamFan1p5 table apply/control byte
+105a	h2ram_window_control	RW	SMFI HRAMWC; selects H2RAM path and enables four host-visible lower-4K DLM windows
+105b	h2ram_window0_base	RW	SMFI HRAMW0BA; H2RAM window 0 base bits 11:4
+105c	h2ram_window1_base	RW	SMFI HRAMW1BA; H2RAM window 1 base bits 11:4
+105d	h2ram_window0_access	RW	SMFI HRAMW0AAS; window 0 size and half-window read/write protection
+105e	h2ram_window1_access	RW	SMFI HRAMW1AAS; window 1 size and half-window read/write protection
+1076	h2ram_window2_base	RW	SMFI HRAMW2BA; H2RAM window 2 base bits 11:4
+1077	h2ram_window3_base	RW	SMFI HRAMW3BA; H2RAM window 3 base bits 11:4
+1078	h2ram_window2_access	RW	SMFI HRAMW2AAS; window 2 size and half-window read/write protection
+1079	h2ram_window3_access	RW	SMFI HRAMW3AAS; window 3 size and half-window read/write protection
 1110	host_command_mailbox	RW	Host-to-EC command byte; handlers observed for 0x22, 0x23 and 0x24
+200d	i2ec_control	RW	SPCTRL1 including I2ECCTRL bits 1:0: 0 disabled, 2 read-only, 3 read-write
+2012	i2ec_port_enable	RW	SPCTRL2 bit 0 enables dedicated I2EC port address decoding
+2014	i2ec_port_base_high	RW	Dedicated I2EC LPC I/O port base high byte
+2015	i2ec_port_base_low	RW	Dedicated I2EC LPC I/O port base low byte, aligned to four ports
