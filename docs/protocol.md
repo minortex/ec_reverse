@@ -65,6 +65,10 @@ wait IBF=0
 out 0x66, 0xFE                   ; EC Reset
 ```
 
+Linux 工具默认不发送 `0xFE`。它会导致平台立即复位，不能把普通 stdio flush
+当作文件已经在 Btrfs 上持久化。只有显式 `--reset` 才启用该路径，且必须发生在
+临时文件同步、原子 rename、目录同步和 `syncfs` 全部成功之后。
+
 ---
 
 ## 3. EC 寄存器接口

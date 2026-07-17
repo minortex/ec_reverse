@@ -18,16 +18,21 @@ Dump and verify perform two reads by default and fail if they differ. Every I/O
 wait has a timeout, SIGINT/SIGTERM trigger cleanup, and KBC is re-enabled on exit.
 The default address range is the complete 256 KiB image (`0` through `0x3ffff`).
 
-Each SPI read transaction is closed with the two direct `0x05` writes observed
+The JEDEC-ID transaction is closed with the two direct `0x05` writes observed
 in `ifux64.efi`, and begins with a direct `0x01` before the opcode selector.
-Top-level recovery defaults to the official reset path: `0xfe`, `0xfc`, drain
-KBC, then `0xae`. Consequently the laptop is expected to reset after a successful
-hardware command. `--no-reset` exists for protocol research but is not recommended.
+Top-level cleanup sends `0xfc`, drains KBC, then sends `0xae`. Hardware reset
+`0xfe` is never implicit; add `--reset` only when an immediate platform reset is
+actually wanted. Without it, the EC may remain powered after OS shutdown and a
+long power-button reset can still be required.
 
 JEDEC-ID and data-read transactions have different endings. Data dump follows
 the EFI verify path: Fast Read `0x0b`, three address bytes, one dummy byte,
 continuous reads up to a 64 KiB boundary, then the EFI status handshake.
 Use `--single-read` only when explicitly accepting weaker consistency checking.
+
+Dump persistence uses a same-directory temporary file, complete write,
+`fdatasync`, atomic rename, directory `fsync`, and filesystem `syncfs`. Only
+after all of those succeed can an explicitly requested `--reset` be issued.
 
 ## Offline firmware tool
 
