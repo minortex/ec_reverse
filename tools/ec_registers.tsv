@@ -6,7 +6,8 @@
 # establishes their role directly. Ranges name the first byte in Ghidra; the
 # export script also emits the complete range in its register index.
 00c0-00c1	smbus_word_data	RW	Shared two-byte SMBus word-data staging buffer used by charger and battery transactions
-030e-030f	base_charge_voltage_target	R	Internal charger target copied to EC[0x0522:0x0523] before aging derating, uint16 little-endian
+030e-030f	base_charge_voltage_target	R	Battery-side voltage request assembled from byte commands 0x0E/0x0F, stored high byte then low byte and derated before publication to EC[0x0522:0x0523]
+0342	battery_capacity_scale_factor	RW	One-byte capacity scaling/calibration factor seeded by vendor battery command 0x42 and subsequently clamped or adjusted by the EC capacity state machine
 0402-0403	battery_design_capacity	R	Battery design capacity, uint16 little-endian, mAh
 0404-0405	battery_last_full_capacity	R	Last full capacity, uint16 little-endian, mAh
 0408-0409	battery_design_voltage	R	Battery design voltage, uint16 little-endian, mV
@@ -28,7 +29,7 @@
 04a2-04a3	battery_temperature	R	Battery temperature, uint16 little-endian, 0.1 K
 04a6-04a7	battery_cycle_count	R	Battery cycle count, uint16 little-endian
 04ab	battery_rsoc	R	Relative state of charge, percent
-0522-0523	charge_voltage_limit	R	EC-selected battery charge-voltage limit
+0522-0523	charge_voltage_limit	R	EC-selected battery charge-voltage limit, uint16 little-endian, mV
 0623	battery_discharge_overcurrent_level	RW	0-7 protection level raised above the battery discharge-current threshold and lowered below the 70 percent hysteresis threshold
 0704-0705	battery_trip_point	RW	ACPI BTP0 battery remaining-capacity trip point, uint16 little-endian
 0706	ap_bios_control	RW	AP/BIOS control byte
@@ -83,7 +84,7 @@
 07fb	port_id_change	RW	WKD port-ID change control
 0832	charger_command_retry_flags	RW	Charger commands requested for a later retry; bits 0 and 1 select ChargingCurrent and ChargingVoltage
 0833	charger_command_active_flags	RW	Charger command work flags consumed by the SMBus queue worker
-0836-0837	queued_charge_voltage	RW	ChargingVoltage word copied from EC[0x0522:0x0523] before the charger SMBus command is queued, uint16 little-endian
+0836-0837	queued_charge_voltage	RW	ChargingVoltage word copied byte-for-byte from EC[0x0522:0x0523] before the charger SMBus command is queued, uint16 little-endian
 0857	debounced_gpd3_state	RW	Bit 0 is a debounced mirror of GPIO data-mirror GPD3; IT5571 D-board pin use is unverified
 0858	gpd3_debounce_counter	RW	Five-tick debounce counter for XRAM[0x0857] bit 0
 09c7	high_voltage_sample_counter	RW	Prescaler counter for the battery high-voltage stress accumulator

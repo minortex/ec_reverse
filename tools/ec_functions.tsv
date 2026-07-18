@@ -2,6 +2,8 @@
 # Only functions whose bodies directly expose their semantics are named here.
 1d08	apply_platform_aux_derating_hooks	medium	On the aging path power_source bit 2 forces the early common tail; its two bank0 hooks are RET stubs and preserve caller-seeded R7=1, so XRAM[0x0A54] remains 1
 3196	is_charge_voltage_update_needed	high	Compares desired EC[0x0522:0x0523] with queued XRAM[0x0836:0x0837], or checks the 0x3138 fallback target when the normal battery path is inactive
+31fc	queue_charge_voltage_update	high	Queues the current desired charge voltage when the caller gate is true or the explicit 0x3138 fallback target when false, then sets voltage command bit 1
+4433	refresh_vendor_battery_telemetry	medium	After command 0x1C/0x1E probes, reads vendor command 0x42 into XRAM[0x0342], command 0x43 into the cycle-count cache XRAM[0x0343:0x0344], and additional battery telemetry; vendor register names are unknown
 5a8e	initialize_battery_telemetry	high	Validates fuel-gauge caches, derives last-full capacity, and publishes ACPI BIF/BST battery fields
 69f6	publish_battery_cycle_count	high	Copies internal fuel-gauge cache XRAM[0x0343:0x0344] to public EC[0x04A6:0x04A7]
 863a	check_battery_trip_point	high	Compares ACPI BTP0 EC[0x0704:0x0705] with remaining capacity and raises SCI query 0x89 on a directional crossing
