@@ -6,7 +6,7 @@
 # establishes their role directly. Ranges name the first byte in Ghidra; the
 # export script also emits the complete range in its register index.
 00c0-00c1	smbus_word_data	RW	Shared two-byte SMBus word-data staging buffer used by charger and battery transactions
-030e-030f	base_charge_voltage_target	R	Battery-side voltage request assembled from byte commands 0x0E/0x0F, stored high byte then low byte and derated before publication to EC[0x0522:0x0523]
+030e-030f	base_charge_voltage_target	R	Battery telemetry-cache voltage request consumed as big-endian high/low bytes and derated before publication to EC[0x0522:0x0523]; underlying telemetry transaction is not yet recovered
 0342	battery_capacity_scale_factor	RW	One-byte capacity scaling/calibration factor seeded by vendor battery command 0x42 and subsequently clamped or adjusted by the EC capacity state machine
 0402-0403	battery_design_capacity	R	Battery design capacity, uint16 little-endian, mAh
 0404-0405	battery_last_full_capacity	R	Last full capacity, uint16 little-endian, mAh
@@ -53,7 +53,8 @@
 0766	support_flags_2	R	Silent mode, USB charging, RGB keyboard and battery protection
 0767	command_trigger	RW	Win-lock, USB-charge and related action trigger
 0768	command_status	R	Win-lock, FanBoost and related action status
-0769-076f	rgb_keyboard_state	RW	RGB keyboard colour and music-mode fields
+0769-076e	rgb_keyboard_color	RW	RGB keyboard current and default RGB components
+076f	rgb_keyboard_music_mode	RW	Official optional RGB-keyboard music-mode selector; 0xFE enables and 0x00 disables it on supported variants, while current project EC[0x0766].2 reports unsupported
 0771-0772	rom_id	R	EC ROM identifier
 0782	bios_oem_2	RW	QKey/default-mode/Fan3 support; meaning is platform dependent
 0783-0785	active_power_limits	R	Current PL1, PL2 and PL4 values
@@ -85,12 +86,13 @@
 0832	charger_command_retry_flags	RW	Charger commands requested for a later retry; bits 0 and 1 select ChargingCurrent and ChargingVoltage
 0833	charger_command_active_flags	RW	Charger command work flags consumed by the SMBus queue worker
 0836-0837	queued_charge_voltage	RW	ChargingVoltage word copied byte-for-byte from EC[0x0522:0x0523] before the charger SMBus command is queued, uint16 little-endian
-0857	debounced_gpd3_state	RW	Bit 0 is a debounced mirror of GPIO data-mirror GPD3; IT5571 D-board pin use is unverified
-0858	gpd3_debounce_counter	RW	Five-tick debounce counter for XRAM[0x0857] bit 0
+0857	optional_rgb_music_step_counter	RW	0-25 step counter in the shared optional-RGB template; used with EC[0x076F] to index waveform tables and update XRAM[0x1803/0x1805/0x1808], but current project reports no RGB-keyboard capability
+0858	debounced_gpd3_state	RW	Bit 0 is a debounced mirror of GPIO data-mirror GPD3; IT5571 D-board pin use is unverified
+0859	gpd3_debounce_counter	RW	Five-tick debounce counter for XRAM[0x0858] bit 0
 09c7	high_voltage_sample_counter	RW	Prescaler counter for the battery high-voltage stress accumulator
 09c8	high_voltage_window_counter	RW	Second-stage counter for qualified high-voltage windows
 09c9-09ca	high_voltage_stress	RW	Temperature-weighted battery high-voltage stress accumulator, uint16 big-endian
-0a54	charge_derating_aux_level	RW	Caller-seeded auxiliary derating level; remains 1 throughout the aging path in this platform build because its optional bank0 hooks are RET stubs
+0a54	shared_scratch_0a54	RW	Shared scratch byte reused across firmware domains; the battery-aging path locally stores caller seed 1 here and compares it with auxiliary derating thresholds before other code can replace it
 0a6b	smbus_controller_index	RW	Temporary SMBus controller/channel index used by the common transaction routine
 0a6c	smbus_protocol	RW	Temporary SMBus transaction protocol/mode byte; charger word writes use 0x0C
 0a6d	smbus_slave_address	RW	Temporary 8-bit SMBus slave address; charger transactions use 0x12

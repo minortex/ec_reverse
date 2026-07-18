@@ -1,6 +1,6 @@
 # address<TAB>name<TAB>confidence<TAB>evidence
 # Only functions whose bodies directly expose their semantics are named here.
-1d08	apply_platform_aux_derating_hooks	medium	On the aging path power_source bit 2 forces the early common tail; its two bank0 hooks are RET stubs and preserve caller-seeded R7=1, so XRAM[0x0A54] remains 1
+1d08	apply_platform_aux_derating_hooks	medium	On the aging path power_source bit 2 forces the early common tail; its two bank0 hooks are RET stubs and preserve caller-seeded R7=1, which the caller then stores in shared scratch XRAM[0x0A54]
 3196	is_charge_voltage_update_needed	high	Compares desired EC[0x0522:0x0523] with queued XRAM[0x0836:0x0837], or checks the 0x3138 fallback target when the normal battery path is inactive
 31fc	queue_charge_voltage_update	high	Queues the current desired charge voltage when the caller gate is true or the explicit 0x3138 fallback target when false, then sets voltage command bit 1
 4433	refresh_vendor_battery_telemetry	medium	After command 0x1C/0x1E probes, reads vendor command 0x42 into XRAM[0x0342], command 0x43 into the cycle-count cache XRAM[0x0343:0x0344], and additional battery telemetry; vendor register names are unknown
@@ -10,13 +10,15 @@
 8efb	service_charger_smbus_queue	high	Consumes charger command bits, issues SMBus commands 0x14/0x15 and requeues a bit when the shared word-data staging bytes differ from the queued command mirror
 8ffb	periodic_720ms_power_maintenance	high	Timer0 phase task called every 144 approximately 5-ms ticks; invokes battery voltage derating and related maintenance
 b99d	configure_on_battery_power_profile	medium	Selects platform power/performance table entries by requested profile and RSOC while running without AC
-d1d1	update_battery_aging_charge_voltage_derating	high	Accumulates temperature-weighted high-voltage stress and combines it with cycle count and battery mode to derive EC[0x0522:0x0523]
+c080	service_optional_rgb_keyboard_state	medium	Shared optional-RGB template path: handles EC[0x076F], indexes waveform tables with XRAM[0x0857], and updates XRAM[0x1803/0x1805/0x1808]; current project EC[0x0766].2 reports this hardware unsupported
+d1d1	update_battery_aging_charge_voltage_derating	high	Derives EC[0x0522:0x0523] from high-voltage stress, cycle count, battery mode and caller-seeded XRAM[0x0A54]; the highest auxiliary threshold compares XRAM[0x0A54], not XRAM[0x0857]
 df0b	prepare_smbus_word_descriptor	high	Builds the four-byte command descriptor at XRAM[0x0A6E:0x0A71] with data pointer 0x00C0
 df7f	is_ap_present	high	Returns EC[0x0741] bit 0 (ApExistFlag)
 df87	power_source_bit0	high	Returns EC[0x0490] bit 0; exact human state name remains platform-dependent
 df9f	fan_mode_mask_90	high	Returns EC[0x0751] masked with 0x90
 dfd6	is_custom_mode_light_enabled	high	Returns EC[0x0727] bit 6
 e010	bios_info5_bit4	high	Returns EC[0x0466] bit 4
+e055	compare_accumulator_below_25	high	Callable shared tail that compares the caller's accumulator A with 25 and returns carry set when A is below 25; the aging caller passes XRAM[0x0A54], while CODE:E051 first loads XRAM[0x0857] then falls through here
 e0d6	bios_info3_bit1	high	Returns EC[0x049F] bit 1
 e12f	complex_power_status_bit0	high	Returns EC[0x07CC] bit 0
 e136	is_user_fan_mode	high	Returns EC[0x0751] bit 7
@@ -32,5 +34,6 @@ e456	publish_main_fan_duty	high	Copies internal PWM state EC[0x1804] to public E
 e45f	is_turbo_fan_mode	high	Returns EC[0x0751] bit 4
 e51c	is_independent_fan_control	high	Returns EC[0x07C5] bit 7
 e598	keyboard_backlight_bit1	high	Returns EC[0x078C] bit 1
+e56f	battery_gate_0497_bit0	high	Returns EC[0x0497] bit 0; CODE:D1BB converts it to caller seed R7=1 or 0 for the battery voltage-derating path
 e5de	reset_second_fan_telemetry	high	Clears internal tachometer state and public EC[0x046B] second-fan RPM
 e952	has_rgb_keyboard	high	Returns EC[0x0766] bit 2 from the official capability map
