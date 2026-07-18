@@ -25,10 +25,12 @@
 0490	power_source	R	Power-source state
 0491	battery_pack_status	R	Battery status; bits 7:6 encode a 2-, 3- or 4-cell series pack for voltage calculations
 0494	battery_alert	R	Battery alert flags
+0497	battery_session_flags	RW	Shared battery data-session flags; bit 0 is set after telemetry/cache initialization and cleared when the battery state machine restarts, while other bits have independent state-machine meanings
 049f	bios_info_3	R	BIOS information byte 3
 04a2-04a3	battery_temperature	R	Battery temperature, uint16 little-endian, 0.1 K
 04a6-04a7	battery_cycle_count	R	Battery cycle count, uint16 little-endian
 04ab	battery_rsoc	R	Relative state of charge, percent
+050a-050b	signed_battery_current	R	Signed little-endian battery current in mA; positive while charging and negative while discharging, with the magnitude published to EC[0x0434:0x0435]
 0522-0523	charge_voltage_limit	R	EC-selected battery charge-voltage limit, uint16 little-endian, mV
 0623	battery_discharge_overcurrent_level	RW	0-7 protection level raised above the battery discharge-current threshold and lowered below the 70 percent hysteresis threshold
 0704-0705	battery_trip_point	RW	ACPI BTP0 battery remaining-capacity trip point, uint16 little-endian

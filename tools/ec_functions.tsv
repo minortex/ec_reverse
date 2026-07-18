@@ -34,6 +34,7 @@ e456	publish_main_fan_duty	high	Copies internal PWM state EC[0x1804] to public E
 e45f	is_turbo_fan_mode	high	Returns EC[0x0751] bit 4
 e51c	is_independent_fan_control	high	Returns EC[0x07C5] bit 7
 e598	keyboard_backlight_bit1	high	Returns EC[0x078C] bit 1
-e56f	battery_gate_0497_bit0	high	Returns EC[0x0497] bit 0; CODE:D1BB converts it to caller seed R7=1 or 0 for the battery voltage-derating path
+e56f	is_battery_data_session_initialized	medium	Returns EC[0x0497] bit 0; the bit is set with transient bit 7 after battery cache/session initialization, cleared on state-machine restart, and gates several battery-data consumers including CODE:D1D1
 e5de	reset_second_fan_telemetry	high	Clears internal tachometer state and public EC[0x046B] second-fan RPM
+e6fe	is_signed_battery_current_negative	high	Returns bit 7 of XRAM[0x050B], the sign bit of the signed little-endian battery current in mA
 e952	has_rgb_keyboard	high	Returns EC[0x0766] bit 2 from the official capability map
