@@ -125,3 +125,26 @@ H2RAM aperture is documented in [`docs/xram_host_access.md`](docs/xram_host_acce
 
 真机 JEDEC ID、1 MiB dump 布局、哈希、复位行为和 Btrfs 持久化记录见
 [`docs/hardware_validation.md`](docs/hardware_validation.md)。
+
+## Experimental I2EC utility
+
+`tools/i2ec_rw.py` accesses the IT557x dedicated I2EC ports at `0x681–0x683`.
+It is separate from the 4 KiB H2RAM/MMIO interface and can address the complete
+16-bit EC memory space after firmware enables I2EC. Stock firmware leaves I2EC
+disabled. Read-only firmware permits `read` and `dump`; `write` requires I2EC
+read-write mode and two explicit CLI confirmations:
+
+```sh
+sudo python3 tools/i2ec_rw.py read 0x09c9
+sudo python3 tools/i2ec_rw.py dump 0x09c7 4
+sudo python3 tools/i2ec_rw.py write 0x0000 0x00 \
+  --allow-write --confirm I_UNDERSTAND_I2EC_WRITES
+```
+
+The write example documents syntax only. Do not write unknown RAM or peripheral
+registers: writable addressing does not imply safe RAM semantics. Run only one
+I2EC client at a time because the high-address, low-address, and data cycles are
+one logical transaction; the tool lock cannot coordinate unrelated `outb` tools.
+The battery-focused read-only firmware patch, pre-flash checks, and post-flash
+validation procedure are documented in
+[`docs/i2ec_battery_investigation.md`](docs/i2ec_battery_investigation.md).
