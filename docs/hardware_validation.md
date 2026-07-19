@@ -14,9 +14,10 @@ Write Enable、Erase 或 Page Program。
 20 40 14 20
 ```
 
-前三字节 `20 40 14` 对应 ST/Numonyx/Micron M25PE 系列，结合完整地址空间读取，
-器件很可能是 M25PE80 或兼容器件，物理容量为 8 Mbit（1 MiB）。第四字节是 EFI
-固定读取的扩展/后续返回字节，不作为标准三字节 JEDEC 容量字段解释。
+前三字节 `20 40 14` 与 XM25QH80 的 JEDEC ID 一致；结合芯片丝印/实物核对，目标器件
+应记录为 XMC XM25QH80。该型号容量为 8 Mbit（1 MiB），因此本次 1 MiB 读取覆盖整片
+地址空间。第四字节是 EFI 固定读取的扩展/后续返回字节，不作为标准三字节 JEDEC
+容量字段解释。
 
 ## 3. 完整 Flash dump
 
