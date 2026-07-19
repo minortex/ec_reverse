@@ -1,8 +1,13 @@
 # address<TAB>name<TAB>confidence<TAB>evidence
 # Only functions whose bodies directly expose their semantics are named here.
+1444	clear_ac_power_qualified_after_debounce	medium	While EC[0x0490].0 is set, decrements XRAM[0x05F1] and clears bit 0 plus charger state when the counter expires; exact physical signal producer is not yet named
+14e8	set_ac_power_qualified_after_debounce	medium	Seeds XRAM[0x05F1] with 200 or 1 and, when the complementary counter expires, sets EC[0x0490].0 while rebuilding AC/charger state
 1d08	apply_platform_aux_derating_hooks	medium	On the aging path power_source bit 2 forces the early common tail; its two bank0 hooks are RET stubs and preserve caller-seeded R7=1, which the caller then stores in shared scratch XRAM[0x0A54]
+d1bb	is_derating_gate_05b9_open	high	Returns R7=1 when XRAM[0x05B9] is not 1 and R7=0 when it equals 1; CODE:D1D1 exits on the zero result
 3196	is_charge_voltage_update_needed	high	Compares desired EC[0x0522:0x0523] with queued XRAM[0x0836:0x0837], or checks the 0x3138 fallback target when the normal battery path is inactive
 31fc	queue_charge_voltage_update	high	Queues the current desired charge voltage when the caller gate is true or the explicit 0x3138 fallback target when false, then sets voltage command bit 1
+3b32	start_battery_power_session_after_debounce	high	When XRAM[0x05F3].1 is clear and XRAM[0x05F2] expires, sets EC[0x0490].1, clears bit 2 and bit 4, clears EC[0x0497], and restarts battery telemetry/session state
+3c69	stop_battery_power_session_after_debounce	high	Seeds XRAM[0x05F2] with 3 and, when XRAM[0x05F3] expires while EC[0x0490].1 is set, clears power-source bits 1 and 2 and tears down battery session state
 4433	refresh_vendor_battery_telemetry	medium	After command 0x1C/0x1E probes, reads vendor command 0x42 into XRAM[0x0342], command 0x43 into the cycle-count cache XRAM[0x0343:0x0344], and additional battery telemetry; vendor register names are unknown
 5a8e	initialize_battery_telemetry	high	Validates fuel-gauge caches, derives last-full capacity, and publishes ACPI BIF/BST battery fields
 69f6	publish_battery_cycle_count	high	Copies internal fuel-gauge cache XRAM[0x0343:0x0344] to public EC[0x04A6:0x04A7]
@@ -11,7 +16,7 @@
 8ffb	periodic_720ms_power_maintenance	high	Timer0 phase task called every 144 approximately 5-ms ticks; invokes battery voltage derating and related maintenance
 b99d	configure_on_battery_power_profile	medium	Selects platform power/performance table entries by requested profile and RSOC while running without AC
 c080	service_optional_rgb_keyboard_state	medium	Shared optional-RGB template path: handles EC[0x076F], indexes waveform tables with XRAM[0x0857], and updates XRAM[0x1803/0x1805/0x1808]; current project EC[0x0766].2 reports this hardware unsupported
-d1d1	update_battery_aging_charge_voltage_derating	high	Derives EC[0x0522:0x0523] from high-voltage stress, cycle count, battery mode and caller-seeded XRAM[0x0A54]; the highest auxiliary threshold compares XRAM[0x0A54], not XRAM[0x0857]
+d1d1	update_battery_aging_charge_voltage_derating	high	Derives EC[0x0522:0x0523] from high-voltage stress, cycle count, battery mode and caller-seeded XRAM[0x0A54]; its first reset gate calls E705 for power-source bit 1, not E6FE for signed current
 df0b	prepare_smbus_word_descriptor	high	Builds the four-byte command descriptor at XRAM[0x0A6E:0x0A71] with data pointer 0x00C0
 df7f	is_ap_present	high	Returns EC[0x0741] bit 0 (ApExistFlag)
 df87	power_source_bit0	high	Returns EC[0x0490] bit 0; exact human state name remains platform-dependent
@@ -34,7 +39,8 @@ e456	publish_main_fan_duty	high	Copies internal PWM state EC[0x1804] to public E
 e45f	is_turbo_fan_mode	high	Returns EC[0x0751] bit 4
 e51c	is_independent_fan_control	high	Returns EC[0x07C5] bit 7
 e598	keyboard_backlight_bit1	high	Returns EC[0x078C] bit 1
-e56f	is_battery_data_session_initialized	medium	Returns EC[0x0497] bit 0; the bit is set with transient bit 7 after battery cache/session initialization, cleared on state-machine restart, and gates several battery-data consumers including CODE:D1D1
+e56f	is_battery_data_session_initialized	medium	Returns EC[0x0497] bit 0; the bit is set with transient bit 7 after battery cache/session initialization, cleared on state-machine restart, and gates several battery-data consumers but not CODE:D1D1
 e5de	reset_second_fan_telemetry	high	Clears internal tachometer state and public EC[0x046B] second-fan RPM
 e6fe	is_signed_battery_current_negative	high	Returns bit 7 of XRAM[0x050B], the sign bit of the signed little-endian battery current in mA
+e705	power_source_bit1	high	Returns EC[0x0490] bit 1; CODE:D1D1 clears its stress counters and returns when this bit is zero
 e952	has_rgb_keyboard	high	Returns EC[0x0766] bit 2 from the official capability map
