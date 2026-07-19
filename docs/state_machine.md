@@ -42,10 +42,8 @@ stateDiagram-v2
     ErrorExit --> Done: print error
 
     state EraseBlock {
-        [*] --> DoEraseMXIC: if MXIC
-        DoEraseMXIC --> WaitDone
-        [*] --> DoEraseOther: if not MXIC
-        DoEraseOther --> WaitDone
+        [*] --> DoErase: vendor/device-specific erase opcode
+        DoErase --> WaitDone
         WaitDone --> [*]
     }
 

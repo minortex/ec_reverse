@@ -169,7 +169,6 @@ ec_write_idx3(0x00) × 3     ; 3 字节虚拟地址
 
 ```
 ec_write_idx2(0x06)          ; SPI WREN
-; MXIC 额外: ec_write_idx2(0x50) — 状态寄存器写使能
 ```
 
 ### 4.4 Read Status Register (RDSR, 0x05)
@@ -189,7 +188,8 @@ ec_write_idx3(addr[1])       ; 地址中字节
 ec_write_idx3(addr[0])       ; 地址低字节
 ```
 
-注意：MXIC 芯片使用 0xF8 而非 0xD8。
+本机 XM25QH80 的实际擦除命令应以芯片数据手册和总线抓取为准；现有只读实验
+没有验证擦除/编程，因此不能把旧文档中的 MXIC `0xF8`/`0x50` 分支套用于本芯片。
 
 ### 4.6 Page Program (0x02)
 
@@ -231,7 +231,7 @@ ec_write_idx3(addr[0])       ; 地址低字节
 
 | ID[0] | ID[1] | ID[2] | 厂商         |
 | ----- | ----- | ----- | ---------- |
-| 0xBF  | —     | —     | MXIC (SST) |
+| 0xBF  | —     | —     | MXIC/SST（刷写器兼容分支，非本机 XM25QH80） |
 | 0xEF  | 0x40  | 0x19  | Winbond    |
 | 0xC8  | —     | —     | GigaDevice |
 | 0x1C  | —     | —     | EON        |
