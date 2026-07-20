@@ -32,7 +32,7 @@
 04ab	battery_rsoc	R	Relative state of charge, percent
 050a-050b	signed_battery_current	R	Signed little-endian battery current in mA; positive while charging and negative while discharging, with the magnitude published to EC[0x0434:0x0435]
 0522-0523	charge_voltage_limit	R	EC-selected battery charge-voltage limit, uint16 little-endian, mV
-05b9	battery_derating_gate_05b9	R	CODE:D1BB allows the voltage-derating path only when this byte is not 1; exact producer and human meaning remain unknown
+05b9	battery_state_gate_05b9	R	Read by a separate helper at CODE:D1AE and bank-wrapper callers; raw CODE:D1D1 does not call this helper, so it is not the direct aging-voltage gate previously inferred
 05f1	ac_power_source_debounce	RW	Bit-0 power-source debounce counter; seeded with 200 or 1 by CODE:14E8 and decremented by CODE:1444 before EC[0x0490].0 changes
 05f2	battery_session_start_debounce	RW	Bit-1 session-start debounce counter; ROM initialization table seeds it to 5, CODE:3C69 reloads it to 3 and CODE:3B32 decrements it before setting EC[0x0490].1
 05f3	battery_session_stop_debounce	RW	Bit-1/bit-2 session-stop debounce counter; ROM initialization table seeds it to 5 and CODE:3C69 decrements it before clearing EC[0x0490].1/.2

@@ -136,8 +136,9 @@ def build_parser():
     parser = argparse.ArgumentParser(
         description="Access 16-bit EC memory through IT557x dedicated I2EC ports",
         epilog=(
-            "The stock firmware leaves I2EC disabled. Read commands require read-only "
-            "or read-write I2EC firmware; writes additionally require read-write firmware."
+            "The stock firmware configures the dedicated I2EC path as read-write after "
+            "initialization. Read commands require I2EC to be enabled; writes additionally "
+            "require the explicit confirmation flags."
         ),
     )
     parser.add_argument(

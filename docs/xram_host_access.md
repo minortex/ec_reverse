@@ -111,7 +111,25 @@ EC 同时访问错误对象；至少应准备外置 SPI 恢复路径，并先在
 
 ## 是否存在完整 XRAM 的隐藏读取通道
 
-### I2EC：硅上存在，但 stock 固件没有真正开放
+### 关于 `0x200D` 的“不可读写”表述
+
+本文前面所说的“`0x200D` 不可读写”是指**当前 stock 主机访问路径**：
+`0xFED50000 + 0x200D` 超出 DLM lower-4K H2RAM aperture，`ECRR/ECRW` 和
+`/dev/mem` 后端不能用这个地址访问 EC-interface register。它不表示芯片内部没有
+`0x200D`，也不表示启用调试型 I2EC 后不能 snoop 该地址。
+
+I2EC 使用独立的 16 位 EC memory address latch（本机 dedicated port 为 `0x681–0x683`），
+因此启用 I2EC 后可以把 `0x200D` 作为 EC memory target 读取。读取到 `0xCB` 时，按
+`SPCTRL1.I2ECCTRL[1:0]` 定义，低两位 `11b` 表示 I2EC read-write；这与 H2RAM 对
+`0x200D` 不可达并不矛盾。
+
+2026-07-19 真机用 I2EC 读取 `0x0454=0x8C`、`0x0490=0x07`，随后用 H2RAM/MMIO 读取
+同样得到 `0x8C`、`0x07`。该跨通道一致性确认 `i2ec_rw.py read 0x200D` 返回的 `0xCB`
+是有效 EC memory 读值，不是端口残值。它同时证明当前运行状态已经开放 read-write。继续
+审计发现两张初始化表都包含 `20 0D 43`：表驱动写入 `0x200D=0x43` 后，两个公共
+初始化点的 `ORL #0xC8` 正好得到 `0xCB`，因此 bit 0 的来源已经在固件中找到。
+
+### I2EC：stock 固件已配置 dedicated path
 
 IT5570 的 Debugger/EC Memory Snoop 定义了 I2EC，可通过 LPC I/O 对任意 16 位 EC memory
 address 做 snoop。它有两种 host transport：
@@ -119,7 +137,7 @@ address 做 snoop。它有两种 host transport：
 - PNPCFG `0x2E/0x2F` 的 depth-2 `I2EC_ADDR_H/L/DATA`；
 - 可编程的专用四端口窗口。
 
-本机 2.12 固件确实留下了后一通道的初始化痕迹：
+本机 2.12 固件配置了后一通道：
 
 ```text
 XRAM[0x2012] SPCTRL2.PI2ECEN = 1
@@ -136,9 +154,10 @@ I2EC 权限的是 `XRAM[0x200D] SPCTRL1.I2ECCTRL[1:0]`：
 | `10b` | read-only |
 | `11b` | read-write |
 
-固件在 `CODE:0xA20B` 和 `CODE:0xC340` 都只执行 `SPCTRL1 |= 0xC8`；`0xC8` 不包含
-bit 1:0，且没有找到其他开启这两位的静态写入。因此目前最合理的结论是：端口地址译码已
-预配置，但全局 I2EC 仍关闭，直接访问 `0x681–0x683` 不应被当作可用后门。
+固件的两个初始化表都包含 `20 0D 43`，分别由 `CODE:0x0FF7–0x1035` 和
+`CODE:0xDF66` 写入 `SPCTRL1=0x43`；随后 `CODE:0xA20B`、`CODE:0xC340` 执行
+`SPCTRL1 |= 0xC8`，最终得到 `0xCB`。因此 stock 初始化后的 I2EC 是 read-write，
+不是 disabled。若只想开放读取，应把两个表项的值 `43` 改为 `42`，使最终值为 `0xCA`。
 
 从固件修改角度，可以把 I2ECCTRL 设成 `10b` 获得只读 snoop；`11b` 会允许写整个 EC
 memory，风险显著更高。即使只读，IT5570 手册也警告某些非触发器型外设寄存器的 snoop
@@ -171,5 +190,5 @@ IT5571 的控制位未变化，并准备硬件恢复手段。
 4. 只有在总线抓取或 ITE 工具确认后，才把 IT5570 的 I2EC/DBGR 行为提升为 IT5571 D
    的实机结论。
 
-当前结论的置信度：H2RAM 窗口配置和 `0x800–0xBFF` 缺口为高；I2EC 专用端口已配置但
-全局关闭为中高；DBGR 引脚/SMBus 是否在本板可达为低。
+当前结论的置信度：H2RAM 窗口配置和 `0x800–0xBFF` 缺口为高；I2EC dedicated path
+及 stock 的 read-write 初始化为高；DBGR 引脚/SMBus 是否在本板可达为低。

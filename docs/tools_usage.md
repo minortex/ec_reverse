@@ -17,8 +17,8 @@
 
 所有 Python 工具仅需标准库，无需额外安装。
 
-`i2ec_rw.py` 的真机访问还需要 root 权限和可用的 `/dev/port`，并要求 EC 固件已经启用
-I2EC；原厂固件保持 I2EC disabled。同一时刻只能运行一个 I2EC 客户端，避免其他端口工具
+`i2ec_rw.py` 的真机访问还需要 root 权限和可用的 `/dev/port`。当前原厂镜像的初始化表
+会把 I2EC 配成 read-write；若制作 `43 -> 42` 实验补丁则变成 read-only。同一时刻只能运行一个 I2EC 客户端，避免其他端口工具
 在 address-high、address-low、data 三步事务之间改写目标地址。
 
 ---

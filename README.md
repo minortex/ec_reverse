@@ -130,9 +130,9 @@ H2RAM aperture is documented in [`docs/xram_host_access.md`](docs/xram_host_acce
 
 `tools/i2ec_rw.py` accesses the IT557x dedicated I2EC ports at `0x681–0x683`.
 It is separate from the 4 KiB H2RAM/MMIO interface and can address the complete
-16-bit EC memory space after firmware enables I2EC. Stock firmware leaves I2EC
-disabled. Read-only firmware permits `read` and `dump`; `write` requires I2EC
-read-write mode and two explicit CLI confirmations:
+16-bit EC memory space. The stock image configures I2EC as read-write during its
+initialization tables; a `43 -> 42` table patch can reduce it to read-only.
+`write` requires I2EC read-write mode and two explicit CLI confirmations:
 
 ```sh
 sudo python3 tools/i2ec_rw.py read 0x09c9
