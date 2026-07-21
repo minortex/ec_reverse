@@ -114,10 +114,9 @@ XMG、Slimbook GOS05/GOS07 变体。MRO17 和 XMG 候选很可能对应 2.04、2
 - common/bank0 的 `CODE:80D2 execute_smbus_transaction` 保存原始 host status，使用
   `0x00/0xEE` 表示成功/失败并以 `R7=1/0` 返回。bank0 名称单独保存在
   `tools/ec_functions-main0.tsv`，避免污染同地址的 bank1 函数。
-- `CODE:1D08 apply_platform_aux_derating_hooks` 在老化调用链中不改写调用者预置的
-  `R7=1`；其两个 bank0 钩子是 `RET`，所以老化函数随后写入共享 scratch
-  `XRAM[0x0A54]` 的局部值为 1，不是保护等级聚合结果。完整导出同时显示其他模块会复用
-  `0x0A54`，因此 TSV 不把它命名成全局专用电池字段。
+- `CODE:1D08` 是 fixed common 区到 `bank1:E64F` 的 wrapper。`E64F` 本身不改 `R7`，
+  但现场主线和 INT1 ISR 共用 register bank 2，ISR 未保存 `R0..R7`；`D264` 的同值影子
+  `0x039D=0x1B` 证明写 `0x0A54` 前 `R7` 已被中断路径污染。
 
 大型入口 `0x95A6/0x95DD/0x9C91` 都进入风扇 duty 计算和发布路径；
 `0x9C78/0xA1FD/0xA265/0xA2AB/0xA2CE/0xA333/0xA34C` 同时访问当前 PL、

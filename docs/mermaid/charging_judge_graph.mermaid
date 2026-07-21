@@ -1,0 +1,57 @@
+flowchart TD
+    Start([周期性任务触发 ~1.008s]) --> Step1{"主机在线?<br>ApExistFlag (0x0741.0) == 1"}
+    
+    Step1 -- "否" --> ClearMode["强制清除充电模式<br>ChargeMode (0x07A6.5:4) 的 Balanced/Health 位"] --> Step2
+    Step1 -- "是" --> Step2{"电池活跃?<br>BatteryActiveGate (0x0490.bit1) == 1"}
+    
+    Step2 -- "否 (断电/断开会话)" --> ClearStress["重置应力与计数器<br>StressAccumulator (0x09C9:0x09CA) 及 0x09C7/0x09C8 全部置零"] --> Exit([退出本次计算])
+    Step2 -- "是" --> DecodeCells["解码电池电芯串数 Cells<br>根据 BatteryStatus (0x0491.7:6) 判定 2S/3S/4S"]
+    
+    DecodeCells --> Step4{"遥测就绪且门开放?<br>TelemetryReadyGate (0x0497.bit0) == 1 且 AuxHookGate (0x0490.bit2) == 1"}
+    Step4 -- "否" --> Exit
+    Step4 -- "是" --> SetAux["设置辅助状态<br>auxiliary_state (0x0A54) = 1"]
+    
+    SetAux --> IncSample["秒计数器自增<br>SampleCounter (0x09C7) ++"]
+    IncSample --> CheckSample{"秒计数器满1分钟?<br>SampleCounter (0x09C7) >= 60?"}
+    
+    CheckSample -- "否" --> Step9
+    CheckSample -- "是" --> ResetSample["秒计数器归零<br>SampleCounter (0x09C7) = 0"]
+    
+    ResetSample --> CheckVolt{"包电压处于高压状态?<br>BatteryVoltage (0x0438:0x0439) >= Cells * 4100 mV"}
+    CheckVolt -- "否" --> Step9
+    CheckVolt -- "是" --> IncWindow["分钟计数器自增<br>WindowCounter (0x09C8) ++"]
+    
+    IncWindow --> CheckWindow{"分钟计数器满1小时?<br>WindowCounter (0x09C8) >= 60?"}
+    CheckWindow -- "否" --> Step9
+    CheckWindow -- "是" --> ResetWindow["分钟计数器归零<br>WindowCounter (0x09C8) = 0"]
+    
+    ResetWindow --> CheckMaxStress{"高压应力未饱和?<br>StressAccumulator (0x09C9:0x09CA) < 65000"}
+    CheckMaxStress -- "否" --> Step9
+    CheckMaxStress -- "是" --> TempBranch{"读取温度 BatteryTemp (0x04A2:0x04A3)<br>进行温度加权累加"}
+    
+    TempBranch -- "< 29.85°C (低温)" --> Add1["StressAccumulator (0x09C9:0x09CA) += 1"] --> Step9
+    TempBranch -- "29.85°C ~ 39.85°C (中温)" --> Add3["StressAccumulator (0x09C9:0x09CA) += 3"] --> Step9
+    TempBranch -- "> 39.85°C (高温)" --> Add7["StressAccumulator (0x09C9:0x09CA) += 7"] --> Step9
+    
+    Step9{"AC 在线使能下发?<br>AC_PresentGate (0x0490.bit0) == 1"}
+    Step9 -- "否" --> Exit
+    Step9 -- "是" --> CheckBase{"基准电压有效?<br>BaseVoltageTarget (0x030E:0x030F) > 500 mV"}
+    
+    CheckBase -- "否" --> Set0["每电芯降额 derating = 0"] --> CalcLimit
+    CheckBase -- "是" --> DeratingTree{"降额分档决策<br>按优先级从高到低判定"}
+    
+    DeratingTree --> Tier250{"应力 > 0x3DE0 或 循环 (0x04A6:0x04A7) >= 550<br>或 辅助状态 (0x0A54) >= 25 ?"} -- "是" --> Set250["derating = 250 mV/cell"]
+    DeratingTree --> Tier200{"应力 > 0x2D00 或 循环 (0x04A6:0x04A7) >= 450<br>或 Health 模式 (0x07A6.5:4 == 10b) ?"} -- "是" --> Set200["derating = 200 mV/cell"]
+    DeratingTree --> Tier150{"应力 > 0x21C0 或 循环 (0x04A6:0x04A7) >= 350 ?"} -- "是" --> Set150["derating = 150 mV/cell"]
+    DeratingTree --> Tier100{"应力 > 0x1950 或 循环 (0x04A6:0x04A7) >= 250<br>或 Balanced 模式 (0x07A6.5:4 == 01b) ?"} -- "是" --> Set100["derating = 100 mV/cell"]
+    DeratingTree --> Tier50{"应力 > 0x10E0 或 循环 (0x04A6:0x04A7) >= 150 ?"} -- "是" --> Set50["derating = 50 mV/cell"]
+    DeratingTree --> TierDefault["derating = 0 mV/cell"]
+    
+    Set250 --> CalcLimit
+    Set200 --> CalcLimit
+    Set150 --> CalcLimit
+    Set100 --> CalcLimit
+    Set50  --> CalcLimit
+    TierDefault --> CalcLimit
+    
+    CalcLimit["计算最终充电目标电压限制<br>DesiredTarget (0x0522:0x0523) = BaseVoltageTarget (0x030E:0x030F) - Cells * derating"] --> Exit

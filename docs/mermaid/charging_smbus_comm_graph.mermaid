@@ -1,0 +1,20 @@
+flowchart TD
+    StartCheck([D1D1 产生新期望电压<br>或状态机周期调度]) --> CheckUpdate{"更新必要性校验 0x3196<br>DesiredTarget (0x0522:0x0523)<br>!= QueuedTarget (0x0836:0x0837)?"}
+    
+    CheckUpdate -- "无变化" --> Keep[保持现状] --> EndCheck([结束本次检查])
+    CheckUpdate -- "有变化" --> QueueUpdate[执行队列排队函数 0x31FC]
+    
+    QueueUpdate --> SetQueue["更新队列缓冲区:<br>QueuedTarget (0x0836:0x0837) = DesiredTarget<br>置位待处理标志 VoltagePending (0x0832.bit1) = 1"] --> EndCheck
+    
+    %% SMBus 异步发送任务
+    SubGraphStart([SMBus 周期服务任务 0x8EFB]) --> CheckPending{"检测电压发送挂起?<br>VoltagePending (0x0832.bit1) == 1?"}
+    CheckPending -- "否 (无待发送任务)" --> Sleep[等待下一调度周期]
+    
+    CheckPending -- "是" --> PrepCmd["准备 SMBus 数据包:<br>复制 QueuedTarget (0x0836:0x0837) 到 SMBusStaging (0x00C0:0x00C1)<br>发送目标: 充电器地址 0x12, 命令: 0x15 (ChargingVoltage)"]
+    
+    PrepCmd --> ExecTrans["通过总线执行物理传输 0x80D2<br>并启用 Timer1 硬件超时监控保护"]
+    ExecTrans --> SaveStatus["保存传输状态到反馈组<br>SMBusStatusGroup (0x0A73 / 0x0A74 / 0x0A75)"]
+    
+    SaveStatus --> SyncCheck["发送缓冲区一致性自检:<br>比较 暂存区 SMBusStaging (0x00C0:0x00C1) 与 队列备份 QueuedTarget (0x0836:0x0837)"]
+    SyncCheck -- "不匹配 (传输失败/丢包)" --> RePending["重新置位发送挂起 VoltagePending (0x0832.bit1) = 1<br>准备下周期重试"] --> Sleep
+    SyncCheck -- "匹配" --> ClearPending["清除发送挂起标志 VoltagePending (0x0832.bit1) = 0"] --> Sleep

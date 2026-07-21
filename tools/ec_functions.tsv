@@ -2,7 +2,7 @@
 # Only functions whose bodies directly expose their semantics are named here.
 1444	clear_ac_power_qualified_after_debounce	medium	While EC[0x0490].0 is set, decrements XRAM[0x05F1] and clears bit 0 plus charger state when the counter expires; exact physical signal producer is not yet named
 14e8	set_ac_power_qualified_after_debounce	medium	Seeds XRAM[0x05F1] with 200 or 1 and, when the complementary counter expires, sets EC[0x0490].0 while rebuilding AC/charger state
-1d08	apply_platform_aux_derating_hooks	medium	On the aging path power_source bit 2 forces the early common tail; its two bank0 hooks are RET stubs and preserve caller-seeded R7=1, which the caller then stores in shared scratch XRAM[0x0A54]
+1d08	bank1_e64f_overlapping_wrapper	medium	The fixed common entry loads target E64F and switches to bank1; E64F mutates A/DPTR and XRAM but not R7, while the observed R7 corruption comes from an ISR sharing register bank 2 with the aging mainline
 d1bb	battery_data_session_gate_0497	high	Calls CODE:E56F and returns R7=1 when EC[0x0497].bit0 is set; CODE:D1D1 exits when the battery-data session is not initialized
 3196	is_charge_voltage_update_needed	high	Compares desired EC[0x0522:0x0523] with queued XRAM[0x0836:0x0837], or checks the 0x3138 fallback target when the normal battery path is inactive
 31fc	queue_charge_voltage_update	high	Queues the current desired charge voltage when the caller gate is true or the explicit 0x3138 fallback target when false, then sets voltage command bit 1
