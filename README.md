@@ -11,12 +11,15 @@ JEDEC-ID, and SPI READ commands; it contains no erase/program implementation.
 sudo build/ec-read --id
 sudo build/ec-read --dump dumps/machine-ec.bin
 sudo build/ec-read --verify samples/GXxHXxx_21.200
+sudo build/ec-read --dump dumps/machine-ec.bin --verify samples/GXxHXxx_21.200
 sudo build/ec-read --dump dumps/region.bin --address 0x20000 --length 0x20000
 ```
 
 Dump and verify perform two reads by default and fail if they differ. Every I/O
 wait has a timeout, SIGINT/SIGTERM trigger cleanup, and KBC is re-enabled on exit.
 The default address range is the complete 256 KiB image (`0` through `0x3ffff`).
+`--dump` and `--verify` may be combined: the dump is installed only after both
+Flash reads agree and the bytes match the reference file.
 
 The JEDEC-ID transaction is closed with the two direct `0x05` writes observed
 in `ifux64.efi`, and begins with a direct `0x01` before the opcode selector.
@@ -51,6 +54,14 @@ clusters with block attribution and byte previews.
 
 Run all offline checks with `make -C src test`. Hardware commands are never run
 by the test target.
+
+The reproducible INT1 bank2-R7 repair for `GXxHXxx_21.200`, its exact 29-byte
+diff, hashes, raw-opcode control flow, validation status, and rules for deriving
+later versions are documented in
+[`docs/firmware_mods/GXxHXxx_21.200/README_20260723.md`](docs/firmware_mods/GXxHXxx_21.200/README_20260723.md).
+Generate it only with the version-local patch script under `firmware_mods/GXxHXxx_21.200/`;
+the script rejects a source image
+whose size, SHA-256, or original patch bytes differ from the reviewed baseline.
 
 ## Readable 8051 export
 
@@ -111,21 +122,6 @@ are documented in [`docs/readable_firmware.md`](docs/readable_firmware.md).
 The distinction between internal 64-KiB XRAM and the protected 4-KiB host
 H2RAM aperture is documented in [`docs/xram_host_access.md`](docs/xram_host_access.md).
 
-## Repository layout
-
-- `src/`: C source and headers only.
-- `build/`: compiler output; ignored by Git.
-- `tools/`: offline analyzer and disassembler definitions.
-- `tests/`: offline tests.
-- `docs/`: maintained analysis and protocol documentation.
-- `samples/`: vendor inputs and generated reverse-engineering output; retained
-  in Git so the analysis remains reproducible.
-- `dumps/`: machine-specific hardware reads; always ignored by Git.
-- `ref/`: reference document, it5570 datasheet.
-
-真机 JEDEC ID、1 MiB dump 布局、哈希、复位行为和 Btrfs 持久化记录见
-[`docs/hardware_validation.md`](docs/hardware_validation.md)。
-
 ## Experimental I2EC utility
 
 `tools/i2ec_rw.py` accesses the IT557x dedicated I2EC ports at `0x681–0x683`.
@@ -147,4 +143,38 @@ I2EC client at a time because the high-address, low-address, and data cycles are
 one logical transaction; the tool lock cannot coordinate unrelated `outb` tools.
 The battery-focused read-only firmware patch, pre-flash checks, and post-flash
 validation procedure are documented in
+
+## Modded Firmware 
+
+Modifying the EC firmware binary requires extreme caution, as the binary itself is the only source of truth. Disassembled `.d52` files and pseudo-C code are for analysis only and may contain errors due to incorrect bank mapping or overlapping code.
+
+Example of applying a reviewed, version-local patch:
+
+```sh
+# Run only the version-specific patch script
+./firmware_mods/GXxHXxx_21.200/apply_patch.sh samples/GXxHXxx_21.200.bin
+```
+
+The resulting binary should be compared against the original using the offline `diff` tool to confirm the exactness of the modification:
+
+```sh
+python3 tools/firmware_tool.py diff original.bin patched.bin
+```
+
+For detailed examples of validated patches, including raw-opcode control flow analysis, refer to `docs/firmware_mods/`.
+
+## Repository layout
+
+- `src/`: C source and headers only.
+- `build/`: compiler output; ignored by Git.
+- `tools/`: offline analyzer and disassembler definitions.
+- `tests/`: offline tests.
+- `docs/`: maintained analysis and protocol documentation.
+- `samples/`: vendor inputs and generated reverse-engineering output; retained
+  in Git so the analysis remains reproducible.
+- `dumps/`: machine-specific hardware reads; always ignored by Git.
+- `ref/`: reference document, it5570 datasheet.
+- `firmware_mods`/`: scripts to mod original firmware and results.
+
+
 [`docs/i2ec_battery_investigation.md`](docs/i2ec_battery_investigation.md).
