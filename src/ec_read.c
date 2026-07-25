@@ -20,7 +20,7 @@ static void on_signal(int sig) { (void)sig; stopped = 1; }
 
 static void usage(FILE *out, const char *name)
 {
-    fprintf(out, "Usage: %s [--id] [--dump FILE|--verify FILE] [options]\n"
+    fprintf(out, "Usage: %s [--id] [--dump FILE] [--verify FILE] [options]\n"
                  "  --address N       flash start address (default 0)\n"
                  "  --length N        bytes to read (default 0x40000)\n"
                  "  --timeout MS      per-I/O timeout (default 1000)\n"
@@ -134,7 +134,7 @@ int main(int argc, char **argv)
         case 'h': usage(stdout, argv[0]); return 0; default: goto bad_args;
         }
     }
-    if (optind != argc || (dump_path && verify_path) || (!show_id && !dump_path && !verify_path) ||
+    if (optind != argc || (!show_id && !dump_path && !verify_path) ||
         (uint64_t)address + length32 > 0x1000000ULL) goto bad_args;
     if (verify_path) {
         if (load_file(verify_path, &expected, &expected_len) < 0) { perror(verify_path); goto cleanup; }

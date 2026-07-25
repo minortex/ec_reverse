@@ -27,6 +27,8 @@ def read_sample(i2ec) -> dict[str, int]:
     return {
         "control": i2ec.read(0x200D),
         "power": i2ec.read(0x0490),
+        "session": i2ec.read(0x0497),
+        "ap_state": i2ec.read(0x0741),
         "cells_code": i2ec.read(0x0491),
         "base": (base_hi << 8) | base_lo,
         "pack": read_word(i2ec, 0x0438, 0x0439),
@@ -36,6 +38,8 @@ def read_sample(i2ec) -> dict[str, int]:
         "gate_05b9": i2ec.read(0x05B9),
         "mode": i2ec.read(0x07A6),
         "aux": i2ec.read(0x0A54),
+        "aging_aux_shadow": i2ec.read(0x039D),
+        "int1_command": i2ec.read(0x1110),
         "pending": i2ec.read(0x0832),
         "queued": read_word(i2ec, 0x0836, 0x0837),
         "sample_counter": i2ec.read(0x09C7),
@@ -86,6 +90,7 @@ def format_sample(sample: dict[str, object]) -> str:
     # makes continuation lines easy to scan as one event.
     return (
         f"{stamp}  AC={int(bool(power & 1))} 0490=0x{power:02X} gates={gates} "
+        f"0497=0x{int(sample['session']):02X} 0741=0x{int(sample['ap_state']):02X} "
         f"cells={int(sample['cells'])}"
         f"\n    pack={int(sample['pack']):5d}mV "
         f"base={int(sample['base']):5d}mV target={int(sample['target']):5d}mV "
@@ -96,7 +101,9 @@ def format_sample(sample: dict[str, object]) -> str:
         f"counters={int(sample['sample_counter']):02d}/{int(sample['window_counter']):02d}"
         f"\n    pending=0x{int(sample['pending']):02X} "
         f"SMBus={int(sample['smbus_result']):02X}/{int(sample['smbus_status']):02X}/"
-        f"{int(sample['smbus_success']):02X} aux=0x{int(sample['aux']):02X}"
+        f"{int(sample['smbus_success']):02X} aux=0x{int(sample['aux']):02X} "
+        f"shadow=0x{int(sample['aging_aux_shadow']):02X} "
+        f"INT1cmd=0x{int(sample['int1_command']):02X}"
     )
 
 
@@ -131,8 +138,8 @@ def main() -> None:
                     else:
                         ignored = {"temp_c", "expected_from_stress"}
                         if not args.transients:
-                            ignored.update({"aux", "smbus_result", "smbus_status",
-                                            "smbus_success"})
+                            ignored.update({"aux", "aging_aux_shadow", "int1_command",
+                                            "smbus_result", "smbus_status", "smbus_success"})
                         changed = [key for key in current if current[key] != previous[key]
                                    and key not in ignored]
                         if changed:
@@ -142,7 +149,7 @@ def main() -> None:
                 except (OSError, RuntimeError, ValueError) as exc:
                     print(f"READ-ERROR {exc}", file=sys.stderr, flush=True)
                 if not stop_requested:
-                    time.sleep(max(0.05, args.interval))
+                    time.sleep(max(0.001, args.interval))
     except KeyboardInterrupt:
         # Keep compatibility with callers that install their own SIGINT handler.
         stop_requested = True

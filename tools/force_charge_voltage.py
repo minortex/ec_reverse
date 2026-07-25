@@ -20,6 +20,27 @@ def read_le(i2ec, low: int, high: int) -> int:
     return i2ec.read(low) | (i2ec.read(high) << 8)
 
 
+def read_be(i2ec, high: int, low: int) -> int:
+    return (i2ec.read(high) << 8) | i2ec.read(low)
+
+
+def read_calibration_state(i2ec) -> dict[str, int]:
+    return {
+        "raw_03a3": i2ec.read(0x03A3),
+        "raw_03a2": i2ec.read(0x03A2),
+        "raw_03a1": i2ec.read(0x03A1),
+        "raw_0388": read_be(i2ec, 0x0388, 0x0389),
+        "raw_038a": read_be(i2ec, 0x038A, 0x038B),
+        "raw_0342": i2ec.read(0x0342),
+        "raw_03c0": i2ec.read(0x03C0),
+        "rsoc_mirror": i2ec.read(0x0347),
+        "current_request": read_le(i2ec, 0x0834, 0x0835),
+        "endpoint_current": read_le(i2ec, 0x04AE, 0x04AF),
+        "fcc": read_le(i2ec, 0x0404, 0x0405),
+        "remaining": read_le(i2ec, 0x0436, 0x0437),
+    }
+
+
 def read_base(i2ec) -> int:
     return (i2ec.read(0x030E) << 8) | i2ec.read(0x030F)
 
@@ -65,6 +86,8 @@ def main() -> None:
     parser.add_argument("--millivolts", type=int, default=17600)
     parser.add_argument("--hold-seconds", type=float, default=108000.0)
     parser.add_argument("--interval", type=float, default=0.02)
+    parser.add_argument("--progress-interval", type=float, default=10.0,
+                        help="状态打印间隔秒数，默认 10")
     parser.add_argument("--base-port", type=lambda value: int(value, 0), default=DEFAULT_BASE_PORT)
     parser.add_argument("--device", default="/dev/port")
     args = parser.parse_args()
@@ -73,6 +96,8 @@ def main() -> None:
         raise ValueError("--hold-seconds must be between 1 and 108000")
     if not 0.01 <= args.interval <= 1:
         raise ValueError("--interval must be between 0.01 and 1 second")
+    if not 1 <= args.progress_interval <= 300:
+        raise ValueError("--progress-interval must be between 1 and 300 seconds")
 
     with open_i2ec(args.base_port, args.device) as i2ec:
         control = i2ec.read(0x200D)
@@ -111,13 +136,23 @@ def main() -> None:
                 rsoc = i2ec.read(0x04AB)
                 current_desired = read_le(i2ec, TARGET_LO, TARGET_HI)
                 current_queued = read_le(i2ec, QUEUED_LO, QUEUED_HI)
+                calibration = read_calibration_state(i2ec)
                 print(
                     f"status desired={current_desired}mV queued={current_queued}mV "
                     f"pack={pack}mV rsoc={rsoc}% "
-                    f"temp={(temp_raw - 2731.5) / 10:.2f}C corrections={corrections}",
+                    f"temp={(temp_raw - 2731.5) / 10:.2f}C corrections={corrections} "
+                    f"raw03A3=0x{calibration['raw_03a3']:02X} "
+                    f"raw03A2/03A1=0x{calibration['raw_03a2']:02X}/"
+                    f"0x{calibration['raw_03a1']:02X} "
+                    f"raw0388={calibration['raw_0388']} raw038A={calibration['raw_038a']} "
+                    f"raw0342/03C0={calibration['raw_0342']}/{calibration['raw_03c0']} "
+                    f"rsoc_mirror={calibration['rsoc_mirror']} "
+                    f"Ireq={calibration['current_request']}mA "
+                    f"Iend={calibration['endpoint_current']} "
+                    f"fcc={calibration['fcc']} remaining={calibration['remaining']}",
                     flush=True,
                 )
-                next_progress = now + 60.0
+                next_progress = now + args.progress_interval
             time.sleep(args.interval)
 
         desired = read_le(i2ec, TARGET_LO, TARGET_HI)

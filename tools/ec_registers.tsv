@@ -7,7 +7,20 @@
 # export script also emits the complete range in its register index.
 00c0-00c1	smbus_word_data	RW	Shared two-byte SMBus word-data staging buffer used by charger and battery transactions
 030e-030f	base_charge_voltage_target	R	Battery telemetry-cache voltage request consumed as big-endian high/low bytes and derated before publication to EC[0x0522:0x0523]; underlying telemetry transaction is not yet recovered
-0342	battery_capacity_scale_factor	RW	One-byte capacity scaling/calibration factor seeded by vendor battery command 0x42 and subsequently clamped or adjusted by the EC capacity state machine
+0342	battery_capacity_scale_factor	RW	FCC calibration factor in 100-mAh units; the accepted charge-capacity candidate is clamped to the old FCC/100 plus or minus 3 before publication
+0361	battery_calibration_debounce	RW	Primary calibration consecutive-condition counter used for the 64-sample full endpoint and 128-sample abort debounce
+0362	battery_calibration_aux_counter	RW	Adjacent auxiliary session counter cleared during calibration stage setup; it is not the low byte of a 16-bit 0x0361 counter
+0384-0385	battery_calibration_pack_voltage	RW	Big-endian pack-voltage work mirror compared with the 13250/14820-mV calibration thresholds
+0388-0389	battery_calibration_charged_capacity	RW	Big-endian charged-capacity accumulator in mAh used to derive the next FCC factor
+038a-038b	battery_calibration_throughput_capacity	RW	Big-endian total/alternate-direction capacity-throughput accumulator in mAh
+039b	battery_calibration_factor_high	RW	Upper accepted factor bound, derived as old FCC/100 plus 3
+039c	battery_calibration_factor_low	RW	Lower accepted factor bound, derived as old FCC/100 minus 3
+03a1	battery_calibration_publish_flags	RW	Capacity-publication flags; bit 1 is set when a newly accepted factor requests FCC republishing
+03a2	battery_calibration_flags	RW	Calibration enable/condition flags; state 0 requires bit 3
+03a3	battery_calibration_state	RW	Capacity calibration state 0-7; states 1-6 represent an active low-SOC-to-full calibration session
+03c0	battery_capacity_factor_mirror	RW	Battery-polled/published mirror that must match XRAM[0x0342] before FCC publication proceeds
+03d0-03d1	battery_calibration_voltage_low	R	Big-endian low pack-voltage threshold; observed as 13250 mV
+03d2-03d3	battery_calibration_voltage_high	R	Big-endian calibration-start pack-voltage ceiling; observed as 14820 mV
 0402-0403	battery_design_capacity	R	Battery design capacity, uint16 little-endian, mAh
 0404-0405	battery_last_full_capacity	R	Last full capacity, uint16 little-endian, mAh
 0408-0409	battery_design_voltage	R	Battery design voltage, uint16 little-endian, mV
@@ -93,6 +106,7 @@
 07fb	port_id_change	RW	WKD port-ID change control
 0832	charger_command_retry_flags	RW	Charger commands requested for a later retry; bits 0 and 1 select ChargingCurrent and ChargingVoltage
 0833	charger_command_active_flags	RW	Charger command work flags consumed by the SMBus queue worker
+0834-0835	queued_charge_current	RW	ChargingCurrent word copied to the shared SMBus staging buffer for charger command 0x14, uint16 little-endian
 0836-0837	queued_charge_voltage	RW	ChargingVoltage word copied byte-for-byte from EC[0x0522:0x0523] before the charger SMBus command is queued, uint16 little-endian
 0857	optional_rgb_music_step_counter	RW	0-25 step counter in the shared optional-RGB template; used with EC[0x076F] to index waveform tables and update XRAM[0x1803/0x1805/0x1808], but current project reports no RGB-keyboard capability
 0858	debounced_gpd3_state	RW	Bit 0 is a debounced mirror of GPIO data-mirror GPD3; IT5571 D-board pin use is unverified

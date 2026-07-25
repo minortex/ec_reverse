@@ -12,6 +12,7 @@ output=$(realpath -m "$2")
 name=$(basename "$input")
 entries=${3-}
 functions=${4-"$root/tools/ec_functions.tsv"}
+loader_base=${EC_LOADER_BASE:-0}
 project=$(mktemp -d "${TMPDIR:-/tmp}/ec-ghidra.XXXXXX")
 config=$(mktemp -d "${TMPDIR:-/tmp}/ec-ghidra-config.XXXXXX")
 cache=$(mktemp -d "${TMPDIR:-/tmp}/ec-ghidra-cache.XXXXXX")
@@ -29,7 +30,7 @@ set -- "$@" "$functions"
 env XDG_CONFIG_HOME="$config" XDG_CACHE_HOME="$cache" \
     /opt/ghidra/support/analyzeHeadless "$project" project \
         -import "$input" -overwrite \
-        -loader BinaryLoader -loader-baseAddr 0 \
+        -loader BinaryLoader -loader-baseAddr "$loader_base" \
         -processor 8051:BE:16:default -analysisTimeoutPerFile 120 \
         -scriptPath "$root/tools/ghidra" \
         -postScript "$@"
