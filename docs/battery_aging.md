@@ -7,7 +7,7 @@
 > `0x47EA/0x4970/0x5A8E/0x69F6` 的正确逻辑地址是
 > `0xC7EA/0xC970/0xDA8E/0xE9F6`。正确重定位后已经恢复有效调用链；此前仅因偏移低于
 > `0x8000` 而把这些代码降级为不可达也是错误的。容量校正的最新结论和触发条件以
-> [`battery_calibration_trigger_audit_20260721.md`](battery_calibration_trigger_audit_20260721.md)
+> [`battery_calibration/battery_calibration_trigger_audit_20260721.md`](battery_calibration/battery_calibration_trigger_audit_20260721.md)
 > 为准；本文件下方未重写的旧地址只表示原始文件偏移。
 
 当前证据显示“电池健康”涉及三个不同层次，不能混为一个固件变量：
