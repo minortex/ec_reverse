@@ -179,17 +179,24 @@ ec_write_idx2(0x05)          ; 发送 RDSR
 ; 检查 WIP (Busy) 位
 ```
 
-### 4.5 Sector Erase 64KB (0xD8)
+### 4.5 EFI 标准路径：4 KiB Sector Erase (0x20)
 
 ```
-ec_write_idx2(0xD8)          ; SPI 64KB Block Erase
-ec_write_idx3(addr[2])       ; 地址高字节
-ec_write_idx3(addr[1])       ; 地址中字节
-ec_write_idx3(addr[0])       ; 地址低字节
+for sector in 0..15:         ; 合计覆盖一个 64 KiB 刷写 block
+  WREN (0x06)，并确认 RDSR & 0x03 == 0x02
+  direct 0x01
+  ec_write_idx2(0x20)        ; SPI 4 KiB Sector Erase
+  ec_write_idx3(addr[2])     ; 地址高字节
+  ec_write_idx3(addr[1])     ; 地址中字节
+  ec_write_idx3(addr[0])     ; 地址低字节
+  direct 0x05
+  RDSR，等待 WIP 清零
+  addr += 0x1000
 ```
 
-本机 XM25QH80 的实际擦除命令应以芯片数据手册和总线抓取为准；现有只读实验
-没有验证擦除/编程，因此不能把旧文档中的 MXIC `0xF8`/`0x50` 分支套用于本芯片。
+上述序列来自 `ifux64.efi` 标准设备分支 RVA `0x322c–0x3280`。EFI 以 64 KiB
+为进度/验证单位，但实际发送十六次 `0x20`，不是一次 `0xD8`。`0xD7`、SST/MXIC
+等分支属于特定 ID 的兼容路径，不能套用于本机 XMC XM25QH80。
 
 ### 4.6 Page Program (0x02)
 
@@ -260,7 +267,7 @@ ec_write_idx3(addr[0])       ; 地址低字节
 │ for each 64KB block:                    │
 │   7. Write Enable (0x06)                │
 │   8. Read Status (0x05) check busy      │
-│   9. Erase 64KB (0xD8)                  │
+│   9. Erase 16 × 4KB (0x20)              │
 │   10. Verify Erase (read 0x03 + FF check)│
 │   11. for each 256B page:               │
 │     12. Write Enable (0x06)             │

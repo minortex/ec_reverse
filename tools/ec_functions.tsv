@@ -41,7 +41,7 @@ e45f	is_turbo_fan_mode	high	Returns EC[0x0751] bit 4
 e51c	is_independent_fan_control	high	Returns EC[0x07C5] bit 7
 e598	keyboard_backlight_bit1	high	Returns EC[0x078C] bit 1
 e56f	is_battery_data_session_initialized	high	Returns EC[0x0497] bit 0; CODE:D1BB converts the result to the R7 gate consumed directly by CODE:D1D1
-e5de	reset_second_fan_telemetry	high	Clears internal tachometer state and public EC[0x046B] second-fan RPM
+e5de	store_and_invalidate_published_power_limits	high	Stores A to caller-supplied XRAM DPTR, then clears public final-power mirrors EC[0x046A], EC[0x046B], and EC[0x046F] so the arbitration path republishes them
 e6fe	is_signed_battery_current_negative	high	Returns bit 7 of XRAM[0x050B], the sign bit of the signed little-endian battery current in mA
 e705	power_source_bit1	high	Returns EC[0x0490] bit 1; CODE:D1D1 clears its stress counters and returns when this bit is zero
 e952	has_rgb_keyboard	high	Returns EC[0x0766] bit 2 from the official capability map

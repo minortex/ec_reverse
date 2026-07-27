@@ -2,9 +2,9 @@
 
 ## 1. 验证范围
 
-本记录汇总 Linux `ec-read` 在目标机器上执行的只读实验。实验只使用 JEDEC
-Read ID (`0x9F`) 和 EFI Verify 路径中的 Fast Read (`0x0B`)；工具没有实现
-Write Enable、Erase 或 Page Program。
+本记录汇总该工具仍名为 Linux `ec-read`、且尚为只读实现时在目标机器上
+执行的实验。实验只使用 JEDEC Read ID (`0x9F`) 和 EFI Verify 路径中的 Fast
+Read (`0x0B`)；当时的工具没有实现 Write Enable、Erase 或 Page Program。
 
 ## 2. JEDEC ID
 

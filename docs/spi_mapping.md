@@ -14,8 +14,8 @@ EC 收到 Selector + 命令后，会 brige 到 SPI Flash 控制器。以下映�
 | 读状态 | ec_write_idx2(0x05)          | 0x05       | RDSR            |
 | 读数据 | ec_write_idx2(0x03)          | 0x03       | READ            |
 | 页编程 | ec_write_idx2(0x02)          | 0x02       | PP (Page Program) |
-| 块擦除 | ec_write_idx2(0xD8)          | 0xD8       | BE 64K (Block Erase) |
-| 厂商特殊擦除/写使能 | — | — | XM25QH80 未通过只读实验验证；勿据旧 MXIC 分支推断 |
+| 标准路径扇区擦除 | ec_write_idx2(0x20) | 0x20 | SE 4K；每个 64 KiB block 执行 16 次 |
+| 厂商特殊擦除/写使能 | 0xD7/0x50 等 | 依 ID 分支 | 不适用于本机 XMC 标准路径 |
 
 ## EC 命令结构
 
@@ -46,11 +46,12 @@ HOST                          EC                        SPI Flash
   |                            |                          |
   |-- Selector=0x02, Data=0x06 |-- WREN (0x06) →          |
   |                            |                          |-- Write Enable
-  |-- Selector=0x02, Data=0xD8 |-- Block Erase (0xD8) →   |
+  |-- Selector=0x02, Data=0x20 |-- Sector Erase (0x20) →  |
   |-- Selector=0x03, Data=A2   |-- addr[2] →              |
   |-- Selector=0x03, Data=A1   |-- addr[1] →              |
   |-- Selector=0x03, Data=A0   |-- addr[0] →              |
-  |                            |                          |-- Erase 64KB
+  |                            |                          |-- Erase 4KB
+  |                            |                          |-- repeat ×16 / 64KB block
   |                            |                          |-- Busy...
   |-- Selector=0x02, Data=0x05 |-- RDSR (0x05) →          |
   |← Selector=0x04, Read 0x62  |← status byte             |← status

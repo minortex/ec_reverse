@@ -30,9 +30,12 @@
 0454	ec_firmware_version	R	EC firmware version
 0456	system_id	R	Platform system identifier
 045b	silent_mode_status	R	Silent-mode status
-0464-0465	main_fan_rpm	R	Main fan tachometer, uint16
+0464-0465	main_fan_rpm	R	Main fan tachometer, big-endian uint16
 0466	bios_info_5	R	BIOS information byte 5
-046b-046c	second_fan_rpm	R	Second fan tachometer, uint16
+046a	published_final_stapm	R	Public mirror of final STAPM limit EC[0x086B], W
+046b	published_final_slow_ppt	R	Public mirror of final slow PPT/SPPT limit EC[0x086C], W
+046c-046d	second_fan_rpm	R	Second fan tachometer, big-endian uint16
+046f	published_final_fast_ppt	R	Public mirror of final fast PPT/FPPT limit EC[0x086E], W
 0476	bios_function_flags	R	BIOS function flags
 047d	ec_sub_version_2	R	EC sub-version
 0490	power_source	R	Power-source state
@@ -57,7 +60,7 @@
 0726	ap_oem_9	RW	Custom-mode bit 7 and AC-recovery bit 3
 0727	ap_oem_10	RW	Custom light bit 6 and PL4-double bit 7
 0740	project_id	R	Platform project identifier
-0741	ap_oem_control	RW	AP-present bit 0; also fan-alert byte
+0741	ap_oem_control	RW	AP-present bit 0; bit 5 is a zero-RPM alert set during the finite EC[0x084C] startup/reinitialization check window
 0742	support_flags_5	R	Hardware support flags 5
 0743-0747	myfan2_or_tgp	RW	MyFan2 PWM levels or configurable-TGP fields
 0748	lightbar_control	RW	Light-bar mode flags
@@ -108,9 +111,13 @@
 0833	charger_command_active_flags	RW	Charger command work flags consumed by the SMBus queue worker
 0834-0835	queued_charge_current	RW	ChargingCurrent word copied to the shared SMBus staging buffer for charger command 0x14, uint16 little-endian
 0836-0837	queued_charge_voltage	RW	ChargingVoltage word copied byte-for-byte from EC[0x0522:0x0523] before the charger SMBus command is queued, uint16 little-endian
+084c	fan_zero_rpm_check_countdown	RW	Finite tachometer validation countdown seeded to 5 by a ROM initialization descriptor; zero-RPM alert evaluation occurs on the final count
 0857	optional_rgb_music_step_counter	RW	0-25 step counter in the shared optional-RGB template; used with EC[0x076F] to index waveform tables and update XRAM[0x1803/0x1805/0x1808], but current project reports no RGB-keyboard capability
 0858	debounced_gpd3_state	RW	Bit 0 is a debounced mirror of GPIO data-mirror GPD3; IT5571 D-board pin use is unverified
 0859	gpd3_debounce_counter	RW	Five-tick debounce counter for XRAM[0x0858] bit 0
+086b	final_stapm	RW	Final arbitrated STAPM limit mirrored to EC[0x046A], W
+086c	final_slow_ppt	RW	Final arbitrated slow PPT/SPPT limit mirrored to EC[0x046B], W
+086e	final_fast_ppt	RW	Final arbitrated fast PPT/FPPT limit mirrored to EC[0x046F], W
 09c7	high_voltage_sample_counter	RW	Prescaler counter for the battery high-voltage stress accumulator
 09c8	high_voltage_window_counter	RW	Second-stage counter for qualified high-voltage windows
 09c9-09ca	high_voltage_stress	RW	Temperature-weighted battery high-voltage stress accumulator, uint16 big-endian; reset startup does not initialize this XRAM word, so its value is indeterminate until CODE:D1D1 observes EC[0x0490].1 clear
@@ -142,6 +149,10 @@
 1078	h2ram_window2_access	RW	SMFI HRAMW2AAS; window 2 size and half-window read/write protection
 1079	h2ram_window3_access	RW	SMFI HRAMW3AAS; window 3 size and half-window read/write protection
 1110	host_command_mailbox	RW	Host-to-EC command byte; handlers observed for 0x22, 0x23 and 0x24
+1804	main_fan_current_duty	RW	Main-fan internal current/ramped raw duty
+1809	second_fan_current_duty	RW	Second-fan internal current/ramped raw duty
+181e-181f	main_fan_raw_tach_count	R	Main-fan raw tachometer period count, little-endian uint16; RPM is floor(2156250/count)
+1820-1821	second_fan_raw_tach_count	R	Second-fan raw tachometer period count, little-endian uint16; RPM is floor(2156250/count)
 200d	i2ec_control	RW	SPCTRL1 including I2ECCTRL bits 1:0: 0 disabled, 2 read-only, 3 read-write
 2012	i2ec_port_enable	RW	SPCTRL2 bit 0 enables dedicated I2EC port address decoding
 2014	i2ec_port_base_high	RW	Dedicated I2EC LPC I/O port base high byte
