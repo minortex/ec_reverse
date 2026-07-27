@@ -2,10 +2,9 @@ CC ?= cc
 CFLAGS ?= -O2 -Wall -Wextra -Wpedantic
 CPPFLAGS ?= -MMD -MP
 LDFLAGS ?=
-
 BUILD_DIR := ../build
-TARGET := $(BUILD_DIR)/ec-read
-SOURCES := ec_read.c ec_io.c follow.c flash_read.c
+TARGET := $(BUILD_DIR)/ec-flash
+SOURCES := ec_flash.c ec_io.c follow.c flash_read.c flash_write.c
 OBJECTS := $(SOURCES:%.c=$(BUILD_DIR)/%.o)
 DEPS := $(OBJECTS:.o=.d)
 

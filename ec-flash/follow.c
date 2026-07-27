@@ -68,18 +68,21 @@ int follow_read_transaction_finish(void)
 {
     uint8_t status;
 
-    /* ifux64.efi routine at RVA 0x27cc, used after each 64 KiB verify read. */
+    /*
+     * ifux64.efi RVA 0x27cc opens one RDSR stream, then repeatedly clocks
+     * status bytes with direct 0x04 writes until WIP clears.
+     */
+    if (ec_out_wait(EC_CMD_PORT, 0x01) < 0 ||
+        ec_write_selector(0x02, 0x05) < 0)
+        return -1;
     for (;;) {
-        if (ec_out_wait(EC_CMD_PORT, 0x01) < 0 ||
-            ec_write_selector(0x02, 0x05) < 0 ||
-            ec_out_wait(EC_CMD_PORT, 0x04) < 0 ||
-            ec_wait_obf_set(EC_CMD_PORT) < 0)
+        if (ec_read_byte(&status) < 0)
             return -1;
-        status = inb(EC_DATA_PORT);
         if (!(status & 0x01))
             break;
     }
-    if (ec_out_wait(EC_CMD_PORT, 0x00) < 0)
+    /* RVA 0x2825 reuses CL=0x05 from the RDSR selector helper. */
+    if (ec_out_wait(EC_CMD_PORT, 0x05) < 0)
         return -1;
     transaction_close_writes = 0;
     return 0;

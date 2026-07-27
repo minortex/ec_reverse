@@ -1,0 +1,35 @@
+#!/bin/sh
+# One-shot EC reset helper for systemd-shutdown. systemd passes one of:
+# poweroff, halt, reboot, or kexec.
+
+case "${1-}" in
+    poweroff|halt|reboot) ;;
+    *) exit 0 ;;
+esac
+
+marker=${EC_FLASH_RESET_MARKER:-/run/ec-flash-reset-on-shutdown}
+[ -e "$marker" ] || exit 0
+
+if [ -n "${EC_FLASH_BIN-}" ]; then
+    ec_flash=$EC_FLASH_BIN
+else
+    ec_flash=
+    for candidate in /usr/local/sbin/ec-flash /usr/sbin/ec-flash /usr/bin/ec-flash; do
+        if [ -x "$candidate" ]; then
+            ec_flash=$candidate
+            break
+        fi
+    done
+fi
+
+if [ -z "$ec_flash" ] || [ ! -x "$ec_flash" ]; then
+    echo "ec-flash shutdown reset: executable not found" >&2
+    exit 1
+fi
+
+# Remove first so a returned/failed command cannot accidentally retrigger later.
+rm -f -- "$marker" || exit 1
+message="ec-flash shutdown reset: sending EC 0xfe before $1"
+echo "$message" >&2
+[ ! -w /dev/console ] || echo "$message" >/dev/console
+exec "$ec_flash" --reset-only

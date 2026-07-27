@@ -1,18 +1,19 @@
 # EC reverse-engineering utilities
 
-This repository contains static-analysis notes plus two conservative tools.
+This repository contains static-analysis notes plus conservative host tools.
 
-## Read-only hardware utility
+## EC Flash hardware utility
 
-Build with `make -C src`. The resulting `build/ec-read` only issues Follow Mode,
-JEDEC-ID, and SPI READ commands; it contains no erase/program implementation.
+Build the development binary with `make -C ec-flash`. The resulting
+`build/ec-flash` supports Follow Mode, JEDEC-ID, SPI reads, and an explicitly
+selected erase/program path reconstructed from `samples/ifux64.efi`.
 
 ```sh
-sudo build/ec-read --id
-sudo build/ec-read --dump dumps/machine-ec.bin
-sudo build/ec-read --verify samples/GXxHXxx_21.200
-sudo build/ec-read --dump dumps/machine-ec.bin --verify samples/GXxHXxx_21.200
-sudo build/ec-read --dump dumps/region.bin --address 0x20000 --length 0x20000
+sudo build/ec-flash --id
+sudo build/ec-flash --dump dumps/machine-ec.bin
+sudo build/ec-flash --verify samples/GXxHXxx_21.200
+sudo build/ec-flash --dump dumps/machine-ec.bin --verify samples/GXxHXxx_21.200
+sudo build/ec-flash --dump dumps/region.bin --address 0x20000 --length 0x20000
 ```
 
 Dump and verify perform two reads by default and fail if they differ. Every I/O
@@ -23,10 +24,9 @@ Flash reads agree and the bytes match the reference file.
 
 The JEDEC-ID transaction is closed with the two direct `0x05` writes observed
 in `ifux64.efi`, and begins with a direct `0x01` before the opcode selector.
-Top-level cleanup sends `0xfc`, drains KBC, then sends `0xae`. Hardware reset
-`0xfe` is never implicit; add `--reset` only when an immediate platform reset is
-actually wanted. Without it, the EC may remain powered after OS shutdown and a
-long power-button reset can still be required.
+Top-level cleanup sends `0xfc`, drains KBC, then sends `0xae`. The normal CLI has
+no immediate-reset option: a verified write instead arms a one-shot reset for
+the final system-shutdown stage.
 
 JEDEC-ID and data-read transactions have different endings. Data dump follows
 the EFI verify path: Fast Read `0x0b`, three address bytes, one dummy byte,
@@ -34,8 +34,65 @@ continuous reads up to a 64 KiB boundary, then the EFI status handshake.
 Use `--single-read` only when explicitly accepting weaker consistency checking.
 
 Dump persistence uses a same-directory temporary file, complete write,
-`fdatasync`, atomic rename, directory `fsync`, and filesystem `syncfs`. Only
-after all of those succeed can an explicitly requested `--reset` be issued.
+`fdatasync`, atomic rename, directory `fsync`, and filesystem `syncfs` before
+returning success.
+
+Writing is destructive and is never implied by dump/verify options. Arguments
+and the input image are validated first; root and `iopl(3)` permission are then
+checked before the delay. Only after permission succeeds does the tool announce
+the default shutdown-reset behavior and wait three seconds so the operator can
+release all keyboard keys before KBC is disabled. The input range must consist
+of complete aligned 64 KiB blocks. For each changed block, the tool follows the
+EFI standard-device path: clear status-register protection, erase with sixteen
+`0x20` 4 KiB sector commands, verify all bytes are `0xff`, program 256-byte pages
+with `0x02`, then read back and compare every byte. Unchanged blocks are skipped.
+EFI vendor-specific SST/unknown and old MXIC programming branches are rejected
+rather than guessed.
+
+```sh
+# Program and verify a complete 256 KiB image.
+# Success automatically arms the late-shutdown EC reset; it does not reset now.
+sudo build/ec-flash --write firmware.bin
+
+# Program one complete 64 KiB block at an aligned offset.
+sudo build/ec-flash --write block1.bin --address 0x10000
+```
+
+Do not interrupt power during erase/program. If a command fails, the tool waits
+for an in-flight SPI operation when possible, requests write-disable, exits
+Follow Mode, and does not create the shutdown-reset marker. This path has been
+matched statically to the EFI implementation but has not been exercised by the
+automated test suite against real hardware.
+
+Build the Arch package from the repository instead of installing through the
+Makefile:
+
+```sh
+cd ec-flash
+makepkg -f
+sudo pacman -U ./ec-flash-*.pkg.tar.zst
+```
+
+The package installs `/usr/bin/ec-flash` and the late-shutdown helper at
+`/usr/lib/systemd/system-shutdown/ec-flash-reset`. The helper is inert unless a
+successful write creates its one-shot marker. To program and then begin shutdown
+without another command needing to be typed after flashing, use an absolute
+firmware path:
+
+```sh
+sudo sh -c '/usr/bin/ec-flash --write /absolute/path/firmware.bin && systemctl poweroff'
+```
+
+The marker is `/run/ec-flash-reset-on-shutdown`, so it cannot survive a reboot.
+The helper consumes it on `poweroff`, `halt`, or `reboot`, then invokes the
+internal `ec-flash --reset-only` path; it ignores `kexec`. It can be manually
+disarmed with `sudo rm -f /run/ec-flash-reset-on-shutdown`.
+
+As documented by `man systemd-shutdown`, executables in
+`/usr/lib/systemd/system-shutdown/` run shortly before the final power action,
+after services have stopped and most filesystems have been unmounted. They run
+in parallel and are subject to a timeout, so this EC reset is a best-effort late
+shutdown integration rather than a strictly ordered UPS-style kill-power step.
 
 ## Offline firmware tool
 
@@ -52,7 +109,7 @@ ranges, prefixes, and printable strings. `split` writes 64 KiB blocks plus a
 manifest. `diff` reports exact changed-byte counts and contiguous difference
 clusters with block attribution and byte previews.
 
-Run all offline checks with `make -C src test`. Hardware commands are never run
+Run all offline checks with `make -C ec-flash test`. Hardware commands are never run
 by the test target.
 
 The reproducible INT1 bank2-R7 repair for `GXxHXxx_21.200`, its exact 29-byte

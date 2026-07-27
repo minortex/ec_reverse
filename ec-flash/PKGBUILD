@@ -1,0 +1,51 @@
+pkgname=ec-flash
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='ITE EC SPI flash read, verify, and write utility'
+arch=('x86_64')
+license=('LicenseRef-Unknown')
+depends=('glibc')
+source=(
+  'ec_flash.c'
+  'ec_io.c'
+  'ec_io.h'
+  'follow.c'
+  'follow.h'
+  'flash_read.c'
+  'flash_read.h'
+  'flash_write.c'
+  'flash_write.h'
+  'ec-flash-system-shutdown'
+)
+sha256sums=('632788b4287510d41f5f498401011bc625f0f74a1aa53cee0131e16261b3c920'
+            '642d7455ab2022f6b2791b8d433ccafe9966f1df73833cf00fe3d468f5178a92'
+            '8efa2fb3f1b1fb47b9b97d428019c8c3ea57a702f892db93ddd57a5b2af9d3e8'
+            'd272857922ab6e77161782dd117a044c88a95e71e7d5b8c54f44c6343c142f8d'
+            'a68567dd818ff26556580bc74c13c898dac8ba89348dcc54495272d811f42797'
+            '1c0a575ab05cda6fa6e2a92ca34995b70456115dd9a5eea3d2917899b50b5aaa'
+            '6ea06fc73676329ce3048ee06ef3b3e306212d4f0ee7a1ea4992a23e901547c2'
+            'b75fce08ba36478abdc3998538b8ab7ab8063142496538e482d06f23d04cc4aa'
+            '09bdfc2e80e3245236a5a73df8dff3c0167b5009682e374e7ffccd54e5881578'
+            'fb21f59c0d7059ba9b5fca213657e54ca3300485ba2b27b236fdaa73d7cf7a0f')
+
+build() {
+  cc $CPPFLAGS $CFLAGS -I"$srcdir" \
+    -o "$srcdir/ec-flash" \
+    "$srcdir/ec_flash.c" \
+    "$srcdir/ec_io.c" \
+    "$srcdir/follow.c" \
+    "$srcdir/flash_read.c" \
+    "$srcdir/flash_write.c" \
+    $LDFLAGS
+}
+
+check() {
+  "$srcdir/ec-flash" --help >/dev/null
+  sh -n "$srcdir/ec-flash-system-shutdown"
+}
+
+package() {
+  install -Dm755 "$srcdir/ec-flash" "$pkgdir/usr/bin/ec-flash"
+  install -Dm755 "$srcdir/ec-flash-system-shutdown" \
+    "$pkgdir/usr/lib/systemd/system-shutdown/ec-flash-reset"
+}

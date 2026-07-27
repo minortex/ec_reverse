@@ -19,6 +19,7 @@ static uint64_t monotonic_ms(void)
 
 void ec_set_timeout(unsigned int milliseconds) { timeout_ms = milliseconds; }
 void ec_set_stop_flag(volatile sig_atomic_t *flag) { stop_flag = flag; }
+int ec_stop_requested(void) { return stop_flag && *stop_flag; }
 
 int ec_init(void)
 {

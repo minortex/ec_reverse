@@ -14,6 +14,7 @@
 int ec_init(void);
 void ec_set_timeout(unsigned int milliseconds);
 void ec_set_stop_flag(volatile sig_atomic_t *flag);
+int ec_stop_requested(void);
 int ec_wait_ibf_clear(uint16_t port);
 int ec_wait_obf_set(uint16_t port);
 int ec_out_wait(uint16_t port, uint8_t value);
