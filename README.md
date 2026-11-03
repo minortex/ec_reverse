@@ -1,245 +1,82 @@
-# EC reverse-engineering utilities
+# EC reverse-engineering toolkit
 
-This repository contains static-analysis notes plus conservative host tools.
+Tools and findings for the ITE IT5571 EC in the Slimbook/WUJIE 14 (`GX4HRXL`),
+firmware `GXxHXxx_21.200`. Coming from `mech-forza-control`? The driver side lives
+there; this repository owns the EC side — images, flashing, and the FlexiCharge
+patch.
 
-Documentation starts at [`docs/00-overview.md`](docs/00-overview.md); chapters
-`01`–`07` hold the current conclusions, and `docs/_archive/` holds the dated
-investigation records behind them.
+## Flash a patched EC
 
-## EC Flash hardware utility
+### 1. Get the official image
 
-Build the development binary with `make -C tools/ec-flash`. The resulting
-`build/ec-flash` supports Follow Mode, JEDEC-ID, SPI reads, and an explicitly
-selected erase/program path reconstructed from `samples/ifux64.efi`.
-
-```sh
-sudo build/ec-flash --id
-sudo build/ec-flash --dump dumps/machine-ec.bin
-sudo build/ec-flash --verify samples/GXxHXxx_21.200
-sudo build/ec-flash --dump dumps/machine-ec.bin --verify samples/GXxHXxx_21.200
-sudo build/ec-flash --dump dumps/region.bin --address 0x20000 --length 0x20000
-```
-
-Dump and verify perform two reads by default and fail if they differ. Every I/O
-wait has a timeout, SIGINT/SIGTERM trigger cleanup, and KBC is re-enabled on exit.
-The default address range is the complete 256 KiB image (`0` through `0x3ffff`).
-`--dump` and `--verify` may be combined: the dump is installed only after both
-Flash reads agree and the bytes match the reference file.
-
-The JEDEC-ID transaction is closed with the two direct `0x05` writes observed
-in `ifux64.efi`, and begins with a direct `0x01` before the opcode selector.
-Top-level cleanup sends `0xfc`, drains KBC, then sends `0xae`. The normal CLI has
-no immediate-reset option: a verified write instead arms a one-shot reset for
-the final system-shutdown stage.
-
-JEDEC-ID and data-read transactions have different endings. Data dump follows
-the EFI verify path: Fast Read `0x0b`, three address bytes, one dummy byte,
-continuous reads up to a 64 KiB boundary, then the EFI status handshake.
-Use `--single-read` only when explicitly accepting weaker consistency checking.
-
-Dump persistence uses a same-directory temporary file, complete write,
-`fdatasync`, atomic rename, directory `fsync`, and filesystem `syncfs` before
-returning success.
-
-Writing is destructive and is never implied by dump/verify options. Arguments
-and the input image are validated first; root and `iopl(3)` permission are then
-checked before the delay. Only after permission succeeds does the tool announce
-the default shutdown-reset behavior and wait three seconds so the operator can
-release all keyboard keys before KBC is disabled. The input range must consist
-of complete aligned 64 KiB blocks. For each changed block, the tool follows the
-EFI standard-device path: clear status-register protection, erase with sixteen
-`0x20` 4 KiB sector commands, verify all bytes are `0xff`, program 256-byte pages
-with `0x02`, then read back and compare every byte. Unchanged blocks are skipped.
-EFI vendor-specific SST/unknown and old MXIC programming branches are rejected
-rather than guessed.
+Use the vendor `GXxHXxx_21.200` image (256 KiB) from the update package. It is
+not tracked here. Check it before doing anything:
 
 ```sh
-# Program and verify a complete 256 KiB image.
-# Success automatically arms the late-shutdown EC reset; it does not reset now.
-sudo build/ec-flash --write firmware.bin
-
-# Program one complete 64 KiB block at an aligned offset.
-sudo build/ec-flash --write block1.bin --address 0x10000
+sha256sum GXxHXxx_21.200
+# 34c050d30772da07ef262fc7016e0677b9b1b4cdcd90cf43d93f0f15bf6a38c2
 ```
 
-Do not interrupt power during erase/program. If a command fails, the tool waits
-for an in-flight SPI operation when possible, requests write-disable, exits
-Follow Mode, and does not create the shutdown-reset marker. This path has been
-matched statically to the EFI implementation but has not been exercised against
-real hardware.
+### 2. Patch it
 
-Build the Arch package from the repository instead of installing through the
-Makefile:
+The builder pins the source digest, applies four reviewed byte-level patches, and
+asserts the output digest, so a drifted offset aborts instead of producing an
+unreviewed image.
 
 ```sh
-cd tools/ec-flash
-makepkg -f
-sudo pacman -U ./ec-flash-*.pkg.tar.zst
+uv run python firmware_mods/GXxHXxx_21.200/build-from-official-20261103/patch_ec_flexicharge_v22.py \
+    GXxHXxx_21.200 flexicharge-v2.2.bin
+# sha256: ff6683769da655f3cafa364ddc9cfcaad84ad28fa7122191d3fefad00a7a19cf
 ```
 
-The package installs `/usr/bin/ec-flash` and the late-shutdown helper at
-`/usr/lib/systemd/system-shutdown/ec-flash-reset`. The helper is inert unless a
-successful write creates its one-shot marker. To program and then begin shutdown
-without another command needing to be typed after flashing, use an absolute
-firmware path:
+Applied in order: direct calibration commit, mode-locked voltage tiers, ApExist
+ignore, FlexiCharge v2.2 (lower charge threshold with hysteresis).
+
+### 3. Build the flasher, read before writing
 
 ```sh
-sudo sh -c '/usr/bin/ec-flash --write /absolute/path/firmware.bin && systemctl poweroff'
+make -C tools/ec-flash
+sudo build/ec-flash --id                 # expect 20 40 14 20 (XMC XM25QH80)
+sudo build/ec-flash --dump machine.bin   # two reads, compared byte for byte
+sudo build/ec-flash --verify GXxHXxx_21.200
 ```
 
-The marker is `/run/ec-flash-reset-on-shutdown`, so it cannot survive a reboot.
-The helper consumes it on `poweroff`, `halt`, or `reboot`, then invokes the
-internal `ec-flash --reset-only` path; it ignores `kexec`. It can be manually
-disarmed with `sudo rm -f /run/ec-flash-reset-on-shutdown`.
+`--dump` and `--verify` never write. Keep the dump: it is your recovery
+reference.
 
-As documented by `man systemd-shutdown`, executables in
-`/usr/lib/systemd/system-shutdown/` run shortly before the final power action,
-after services have stopped and most filesystems have been unmounted. They run
-in parallel and are subject to a timeout, so this EC reset is a best-effort late
-shutdown integration rather than a strictly ordered UPS-style kill-power step.
-
-## Offline firmware tool
-
-The analyzer requires only Python 3's standard library.
+### 4. Write
 
 ```sh
-python3 tools/firmware_tool.py analyze samples/GXxHXxx_21.200 -o manifest.json
-python3 tools/firmware_tool.py split samples/GXxHXxx_21.200 split-output
-python3 tools/firmware_tool.py diff old.bin new.bin -o diff.json
+sudo build/ec-flash --write flexicharge-v2.2.bin
 ```
 
-`analyze` records whole-image/block SHA-256, byte sum, non-FF usage, long FF
-ranges, prefixes, and printable strings. `split` writes 64 KiB blocks plus a
-manifest. `diff` reports exact changed-byte counts and contiguous difference
-clusters with block attribution and byte previews.
+- Only changed 64 KiB blocks are touched: 16 × 4 KiB sector erase, erase check
+  for `FF`, 256-byte page program, then a full read-back compare.
+- Never cut power during erase/program. KBC is disabled while flashing; keep
+  hands off the keyboard during the 3-second countdown.
+- A successful write only arms a one-shot EC reset for the next shutdown
+  (`/run/ec-flash-reset-on-shutdown`). It does not reset immediately.
+- The write path is reconstructed from the vendor `ifux64.efi` and has not been
+  exercised on this project's hardware. Have an external SPI programmer and a
+  verified full dump before you try it.
 
-Run only offline checks with `make -C tools/ec-flash`; hardware commands are never
-executed by the build.
+Requirements: Linux with `/dev/port`, root, `iopl(3)`, Python 3 + `uv`.
 
-The reproducible INT1 bank2-R7 repair for `GXxHXxx_21.200`, its exact 29-byte
-diff, hashes, raw-opcode control flow, validation status, and rules for deriving
-later versions are documented in
-[`docs/07-mods.md`](docs/07-mods.md).
-Generate it only with the version-local patch script under `firmware_mods/GXxHXxx_21.200/`;
-the script rejects a source image
-whose size, SHA-256, or original patch bytes differ from the reviewed baseline.
+## What the patch changes
 
-## Readable 8051 export
+`0x07B9[6:0]` stays the upper limit; FlexiCharge adds a lower limit in `0x07D0`,
+a hysteresis phase bit, and a persistent slot so the setting survives a cold EC
+boot. Stock firmware never reads `0x07D0`, so on an unpatched EC the lower limit
+is silently ignored and charging stops only at the upper limit.
 
-Ghidra 12's 8051 decompiler can keep code addresses separate from EC/XRAM
-addresses.  The export helper installs register names recovered from the
-official GCU Service, then emits pseudo-C plus a static register-reference
-index:
+## Other entry points
 
-```sh
-tools/export_readable_ec.sh samples/disasm/main-bank0.bin readable-main0 \
-  - tools/ec_functions-main0.tsv
-```
-
-The bundled register vocabulary is in `tools/ec_registers.tsv`. Bank0/common
-SMBus symbols are kept in `tools/ec_functions-main0.tsv`; the default
-`tools/ec_functions.tsv` is for bank1 because equal 16-bit code addresses name
-different functions after a bank switch. Generated
-pseudo-C is an analysis aid, not buildable vendor source: indirect DPTR access,
-bank switching, tables, and incorrectly discovered function boundaries still
-require manual review.  Analyze each 64 KiB bank separately so the 8051's
-overlapping bank addresses are not conflated.
-
-For banked or force-disassembled `.d52` files without reliable entry points,
-use the conservative text annotator.  It only labels constant DPTR loads and
-therefore does not confuse an equal numeric code address with an XRAM address:
-
-```sh
-python3 tools/annotate_disassembly.py samples/disasm/main-bank1.d52 \
-  -o build/main-bank1.annotated.d52 --xrefs build/main-bank1-xrefs.md
-```
-
-Bank images without vectors can be seeded from the Keil C51 wrapper table in
-the common bank:
-
-```sh
-python3 tools/extract_bank_entries.py samples/disasm/main-bank0.bin \
-  -o build/bank-entries.json
-entries=$(python3 tools/extract_bank_entries.py samples/disasm/main-bank0.bin \
-  --entries bank1)
-tools/export_readable_ec.sh samples/disasm/main-bank1.bin \
-  build/readable-main1 "$entries"
-python3 tools/summarize_pseudoc.py \
-  build/readable-main1/main-bank1.bin.c \
-  -o build/readable-main1/semantic-index.md
-```
-
-Short, uniquely matching functions can carry their reviewed names to another
-firmware version without assuming stable addresses:
-
-```sh
-python3 tools/translate_function_symbols.py \
-  samples/disasm/main-bank1.bin build/fw210/block1.bin \
-  -o build/fw210/ec-functions.tsv
-```
-
-Evidence, version comparison, limitations, and the next symbol-recovery steps
-are documented in [`docs/03-firmware-structure.md`](docs/03-firmware-structure.md).
-The distinction between internal 64-KiB XRAM and the protected 4-KiB host
-H2RAM aperture is documented in the same chapter (§4–§5).
-
-## Experimental I2EC utility
-
-`tools/i2ec_rw.py` accesses the IT557x dedicated I2EC ports at `0x681–0x683`.
-It is separate from the 4 KiB H2RAM/MMIO interface and can address the complete
-16-bit EC memory space. The stock image configures I2EC as read-write during its
-initialization tables; a `43 -> 42` table patch can reduce it to read-only.
-`write` writes one byte and, unless `--force` is given, first checks that
-`EC[0x200D]` reports I2EC read-write mode (`SPCTRL1 & 3 == 3`). There is no
-confirmation prompt; the tool is a raw byte interface.
-
-```sh
-sudo python3 tools/i2ec_rw.py read 0x09c9
-sudo python3 tools/i2ec_rw.py read 0x0439 0x0438   # high, low -> combined word
-sudo python3 tools/i2ec_rw.py dump 0x09c7 4
-sudo python3 tools/i2ec_rw.py write 0x0340 0x14
-```
-
-The write example documents syntax only. Do not write unknown RAM or peripheral
-registers: writable addressing does not imply safe RAM semantics. Run only one
-I2EC client at a time because the high-address, low-address, and data cycles are
-one logical transaction; the tool lock cannot coordinate unrelated `outb` tools.
-The battery-focused read-only firmware patch, pre-flash checks, and post-flash
-validation procedure are documented in
-[`docs/03-firmware-structure.md`](docs/03-firmware-structure.md) §5.
-
-## Modded Firmware
-
-Modifying the EC firmware binary requires extreme caution, as the binary itself is the only source of truth. Disassembled `.d52` files and pseudo-C code are for analysis only and may contain errors due to incorrect bank mapping or overlapping code.
-
-Example of applying a reviewed, version-local patch (each version directory owns
-its script and baseline checks):
-
-```sh
-# The v2.2 script only accepts its own baseline (cal-direct-mode-locked-apexist-ignore)
-python3 firmware_mods/GXxHXxx_21.200/cal-direct-mode-locked-apexist-ignore-flexicharge-v2.2-20260729/patch_flexicharge_v22.py \
-  firmware_mods/GXxHXxx_21.200/cal-direct-mode-locked-apexist-ignore-20260723/GXxHXxx_21.200-cal-direct-mode-locked-apexist-ignore-20260723.bin \
-  /tmp/GXxHXxx_21.200-v2.2.bin
-```
-
-The resulting binary should be compared against the original using the offline `diff` tool to confirm the exactness of the modification:
-
-```sh
-python3 tools/firmware_tool.py diff original.bin patched.bin
-```
-
-For the patch catalogue, exact byte ranges, and validation gates, see
-[`docs/07-mods.md`](docs/07-mods.md).
-
-## Repository layout
-
-- `build/`: compiler output; ignored by Git.
-- `tools/`: analysis scripts and register tables, Ghidra export, I2EC
-  utilities, and the `ec-flash` C utility (`tools/ec-flash/`).
-- `docs/`: numbered current-conclusion chapters (`00`–`07`) plus `_archive/`
-  with the dated investigation records.
-- `samples/`: vendor inputs and generated reverse-engineering output; retained
-  in Git so the analysis remains reproducible.
-- `dumps/`: machine-specific hardware reads; always ignored by Git.
-- `ref/`: reference document, it5570 datasheet.
-- `firmware_mods/`: version-local patch scripts and generated images.
+| Path | Purpose |
+|---|---|
+| `tools/ec-flash/` | SPI flash read/verify/write (C) |
+| `tools/ec/i2ec_rw.py` | raw EC byte read/write over ports `0x681–0x683` |
+| `tools/analysis/` | offline image analysis, disassembly annotation, Ghidra export |
+| `docs/00-overview.md` | document map, confidence levels, open questions |
+| `docs/02-flash-protocol.md` | Follow Mode / SPI protocol and tool constraints |
+| `docs/05-calibration-and-limits.md` | calibration state machine, `0x07B9`/`0x07D0` |
+| `docs/07-mods.md` | patch catalogue, byte ranges, validation gates |
