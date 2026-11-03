@@ -11,7 +11,7 @@ patch.
 ### 1. Get the official image
 
 Use the vendor `GXxHXxx_21.200` image (256 KiB) from the update package.
-You may download it from [here](https://cloud.slimbook.net/s/download?dir=/Laptops/Evo-14/Ryzen-8845HS/BIOS)
+You may download it from [SLIMBOOK: SLIMBOOK.Evo_AMD8845HS_BIOS_N.1.14GOS07_EC_2.12.00.zip](https://cloud.slimbook.net/s/download?dir=/Laptops/Evo-14/Ryzen-8845HS/BIOS)
 
 ```sh
 sha256sum GXxHXxx_21.200
@@ -42,8 +42,9 @@ make -C tools/ec-flash
 
 ### 4. Write
 
-> **Warning:** every `ec-flash` invocation enters Follow Mode: the fans spin up
-> to full speed, the built-in keyboard is locked. Use an external USB keyboard
+> [!WARNING]
+> every `ec-flash` invocation enters Follow Mode: the fans spin up to full 
+> speed, the built-in keyboard is locked. Use an external USB keyboard
 > and finish your work in 3 minutes or the watchdog will cut off your power.
 
 ```sh

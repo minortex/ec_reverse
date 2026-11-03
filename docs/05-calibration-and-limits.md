@@ -170,6 +170,20 @@ OEM 0x47 / 0x48  →  EC[0x0A47] / EC[0x0A48]
 | **会话开启**（`phase=1, stop=0`） | 继续充 | 继续充 | 停充 |
 | **会话未开启**（`phase=0, stop=1`） | 开始充 | 继续停充（不补电） | 继续停充 |
 
+代码落点（`patch_ec_flexicharge_v22.py` 的 cave 生成段）：
+
+| 标签 | 实际操作 |
+|---|---|
+| `apply_policy` | `B = 0x07D0 & 0x7F`；`0x0773` 仅在 low 变化时写 `0x80 \| low` 并置 `A5/78`；随后依次比较 `SOC <= low`、`SOC >= high`、中间区间 |
+| `at_or_below_low` | `0x07D0 = raw_low \| 0x80`（phase=1）；`0x07B9 &= 0x7F`（stop=0） |
+| `at_or_above_high` | `0x07D0 = raw_low & 0x7F`（phase=0）；`0x07B9 \|= 0x80`（stop=1） |
+| `middle_charge` | `0x07B9 &= 0x7F`，不写 `0x07D0` |
+| `middle_hold` | `0x07B9 \|= 0x80`，不写 `0x07D0` |
+| `stock_decision` | upper-only 兼容：只按 `SOC - high` 清/置 `0x07B9.bit7`，不动 phase |
+
+两个 XRAM 位在每次判定里都会被重写；只有 NVM 影子 `0x0773` 是“变化才写”
+（`(shadow & 0x7F) XOR low` 为 0 则跳过，避免每秒写 Flash）。
+
 位定义：
 
 | 位 | 地址 | 含义 |
