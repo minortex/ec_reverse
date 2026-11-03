@@ -6,12 +6,13 @@ if [ "$#" -lt 2 ] || [ "$#" -gt 4 ]; then
     exit 2
 fi
 
-root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+analysis="$root/tools/analysis"
 input=$(realpath "$1")
 output=$(realpath -m "$2")
 name=$(basename "$input")
 entries=${3-}
-functions=${4-"$root/tools/ec_functions.tsv"}
+functions=${4-"$analysis/ec_functions.tsv"}
 loader_base=${EC_LOADER_BASE:-0}
 project=$(mktemp -d "${TMPDIR:-/tmp}/ec-ghidra.XXXXXX")
 config=$(mktemp -d "${TMPDIR:-/tmp}/ec-ghidra-config.XXXXXX")
@@ -19,7 +20,7 @@ cache=$(mktemp -d "${TMPDIR:-/tmp}/ec-ghidra-cache.XXXXXX")
 trap 'rm -rf "$project" "$config" "$cache"' EXIT HUP INT TERM
 
 mkdir -p "$output"
-set -- ExportReadableEc.java "$root/tools/ec_registers.tsv" "$output"
+set -- ExportReadableEc.java "$analysis/ec_registers.tsv" "$output"
 if [ -n "$entries" ]; then
     set -- "$@" "$entries"
 else
@@ -32,7 +33,7 @@ env XDG_CONFIG_HOME="$config" XDG_CACHE_HOME="$cache" \
         -import "$input" -overwrite \
         -loader BinaryLoader -loader-baseAddr "$loader_base" \
         -processor 8051:BE:16:default -analysisTimeoutPerFile 120 \
-        -scriptPath "$root/tools/ghidra" \
+        -scriptPath "$analysis/ghidra" \
         -postScript "$@"
 
 echo "Generated $output/$name.c and $output/ec-register-index.md"

@@ -114,18 +114,18 @@ XRAM 是 64 KiB 内部地址空间，主机**只能**经 `0xFED50000` 看到低 
 
 限制：三次端口写是一个逻辑事务，全系统只能有一个客户端；逐字节读不原子；
 `0x0000–0xFFFF` 混有 SRAM、未实现地址和片上外设，不能一律当 RAM。
-唯一可用工具是 `tools/i2ec_rw.py`（需 root 与 `/dev/port`）。
+唯一可用工具是 `tools/ec/i2ec_rw.py`（需 root 与 `/dev/port`）。
 
 ## 6. 分析流水线
 
 | 工具 | 作用 |
 |---|---|
-| `tools/firmware_tool.py` | analyze / split / diff（哈希、非 FF 统计、空洞、差异簇） |
-| `tools/extract_bank_entries.py` | 从 common wrapper 表恢复 bank 入口（2.12：402/62/47） |
-| `tools/export_readable_ec.sh` | Ghidra 8051 伪 C 导出，区分 CODE/INTMEM/SFR/EXTMEM |
-| `tools/annotate_disassembly.py` | 只标注 `MOV DPTR,#const`（2.12 bank1：691 个） |
-| `tools/summarize_pseudoc.py` | 伪 C 语义索引 |
-| `tools/translate_function_symbols.py` | 跨版本按函数体指纹迁移符号 |
+| `tools/analysis/firmware_tool.py` | analyze / split / diff（哈希、非 FF 统计、空洞、差异簇） |
+| `tools/analysis/extract_bank_entries.py` | 从 common wrapper 表恢复 bank 入口（2.12：402/62/47） |
+| `tools/analysis/export_readable_ec.sh` | Ghidra 8051 伪 C 导出，区分 CODE/INTMEM/SFR/EXTMEM |
+| `tools/analysis/annotate_disassembly.py` | 只标注 `MOV DPTR,#const`（2.12 bank1：691 个） |
+| `tools/analysis/summarize_pseudoc.py` | 伪 C 语义索引 |
+| `tools/analysis/translate_function_symbols.py` | 跨版本按函数体指纹迁移符号 |
 
 已恢复规模：bank1 用 62 个入口得到 382 个函数，成功反编译 381（`CODE:0x1C60` 失败）。
 2.10 与 2.12 的 PD bank 完全相同，`92,007` 个差异字节全在主 EC 前 128 KiB。
