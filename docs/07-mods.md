@@ -24,7 +24,8 @@ python3 firmware_mods/GXxHXxx_21.200/cal-direct-mode-locked-apexist-ignore-flexi
 |---|---|---|---|
 | `cal-direct-mode-locked-20260723` | 官方 | 校准值直通 + 模式锁定（仅脚本） | 未实机 |
 | `cal-direct-mode-locked-apexist-ignore-20260723` | 官方 | 上述 + 忽略 APExist | 未实机 |
-| `cal-direct-mode-locked-apexist-ignore-flexicharge-v2.2-20260729` | 官方 | 上述 + FlexiCharge v2.2 | 寄存器级真机验证 |
+| `cal-direct-mode-locked-apexist-ignore-flexicharge-v2.2-20260729` | 锁定版 | 上述 + FlexiCharge v2.2 | 寄存器级真机验证 |
+| `build-from-official-20261103` | 官方 | 一次合成上面三步 + FlexiCharge v2.2，输出哈希锁定 `ff668376…` | 生成结果与 v2.2 产物逐字节一致 |
 | `cal-direct-mode-locked-apexist-ignore-sbs-cyclecount-v13-word-scan-20260727` | 锁定版 | 只读 SMBus 探针（v13） | 真机只读验证 |
 | `cal-direct-mode-locked-apexist-ignore-sbs-identity-v11-live-veneer-observer-20260727` | 锁定版 | 现场观察器（v11） | 真机只读验证 |
 
