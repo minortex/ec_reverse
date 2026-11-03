@@ -2,6 +2,10 @@
 
 This repository contains static-analysis notes plus conservative host tools.
 
+Documentation starts at [`docs/00-overview.md`](docs/00-overview.md); chapters
+`01`–`07` hold the current conclusions, and `docs/_archive/` holds the dated
+investigation records behind them.
+
 ## EC Flash hardware utility
 
 Build the development binary with `make -C ec-flash`. The resulting
@@ -115,7 +119,7 @@ by the test target.
 The reproducible INT1 bank2-R7 repair for `GXxHXxx_21.200`, its exact 29-byte
 diff, hashes, raw-opcode control flow, validation status, and rules for deriving
 later versions are documented in
-[`docs/firmware_mods/GXxHXxx_21.200/README_20260723.md`](docs/firmware_mods/GXxHXxx_21.200/README_20260723.md).
+[`docs/07-mods.md`](docs/07-mods.md).
 Generate it only with the version-local patch script under `firmware_mods/GXxHXxx_21.200/`;
 the script rejects a source image
 whose size, SHA-256, or original patch bytes differ from the reviewed baseline.
@@ -175,9 +179,9 @@ python3 tools/translate_function_symbols.py \
 ```
 
 Evidence, version comparison, limitations, and the next symbol-recovery steps
-are documented in [`docs/readable_firmware.md`](docs/readable_firmware.md).
+are documented in [`docs/03-firmware-structure.md`](docs/03-firmware-structure.md).
 The distinction between internal 64-KiB XRAM and the protected 4-KiB host
-H2RAM aperture is documented in [`docs/xram_host_access.md`](docs/xram_host_access.md).
+H2RAM aperture is documented in the same chapter (§4–§5).
 
 ## Experimental I2EC utility
 
@@ -200,16 +204,20 @@ I2EC client at a time because the high-address, low-address, and data cycles are
 one logical transaction; the tool lock cannot coordinate unrelated `outb` tools.
 The battery-focused read-only firmware patch, pre-flash checks, and post-flash
 validation procedure are documented in
+[`docs/03-firmware-structure.md`](docs/03-firmware-structure.md) §5.
 
-## Modded Firmware 
+## Modded Firmware
 
 Modifying the EC firmware binary requires extreme caution, as the binary itself is the only source of truth. Disassembled `.d52` files and pseudo-C code are for analysis only and may contain errors due to incorrect bank mapping or overlapping code.
 
-Example of applying a reviewed, version-local patch:
+Example of applying a reviewed, version-local patch (each version directory owns
+its script and baseline checks):
 
 ```sh
-# Run only the version-specific patch script
-./firmware_mods/GXxHXxx_21.200/apply_patch.sh samples/GXxHXxx_21.200.bin
+# The v2.2 script only accepts its own baseline (cal-direct-mode-locked-apexist-ignore)
+python3 firmware_mods/GXxHXxx_21.200/cal-direct-mode-locked-apexist-ignore-flexicharge-v2.2-20260729/patch_flexicharge_v22.py \
+  firmware_mods/GXxHXxx_21.200/cal-direct-mode-locked-apexist-ignore-20260723/GXxHXxx_21.200-cal-direct-mode-locked-apexist-ignore-20260723.bin \
+  /tmp/GXxHXxx_21.200-v2.2.bin
 ```
 
 The resulting binary should be compared against the original using the offline `diff` tool to confirm the exactness of the modification:
@@ -218,7 +226,8 @@ The resulting binary should be compared against the original using the offline `
 python3 tools/firmware_tool.py diff original.bin patched.bin
 ```
 
-For detailed examples of validated patches, including raw-opcode control flow analysis, refer to `docs/firmware_mods/`.
+For the patch catalogue, exact byte ranges, and validation gates, see
+[`docs/07-mods.md`](docs/07-mods.md).
 
 ## Repository layout
 
@@ -226,12 +235,10 @@ For detailed examples of validated patches, including raw-opcode control flow an
 - `build/`: compiler output; ignored by Git.
 - `tools/`: offline analyzer and disassembler definitions.
 - `tests/`: offline tests.
-- `docs/`: maintained analysis and protocol documentation.
+- `docs/`: numbered current-conclusion chapters (`00`–`07`) plus `_archive/`
+  with the dated investigation records.
 - `samples/`: vendor inputs and generated reverse-engineering output; retained
   in Git so the analysis remains reproducible.
 - `dumps/`: machine-specific hardware reads; always ignored by Git.
 - `ref/`: reference document, it5570 datasheet.
-- `firmware_mods`/`: scripts to mod original firmware and results.
-
-
-[`docs/i2ec_battery_investigation.md`](docs/i2ec_battery_investigation.md).
+- `firmware_mods/`: version-local patch scripts and generated images.

@@ -11,3 +11,9 @@ __pycache__/
 /diff.json
 /split-output/
 /samples
+
+# Locally archived (old versions, junk) — kept on disk, never committed
+/archive/
+
+# Generated firmware images (reproducible from samples/ + patch_*.py scripts)
+firmware_mods/**/*.bin
