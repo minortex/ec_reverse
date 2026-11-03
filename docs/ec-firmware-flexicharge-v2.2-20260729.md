@@ -1,6 +1,6 @@
 # EC 固件补丁：FlexiCharge v2.2（2026-07-29）
 
-本文记录 `tools/patch_ec_flexicharge_v22.py` 从官方镜像生成的改版固件具备什么功能、
+本文记录 `firmware_mods/GXxHXxx_21.200/build-from-official-20261103/patch_ec_flexicharge_v22.py` 从官方镜像生成的改版固件具备什么功能、
 改写了哪些字节，以及与 `mfc bat` 主机端的对应关系。生成器只做静态字节变换，
 
 ## 1. 用法与产物
@@ -13,7 +13,7 @@
 | 相对官方镜像 | 304 字节变化，9 个区段（见第 4 节） |
 
 ```bash
-uv run python tools/patch_ec_flexicharge_v22.py GXxHXxx_21.200 flexicharge-v2.2.bin
+uv run python firmware_mods/GXxHXxx_21.200/build-from-official-20261103/patch_ec_flexicharge_v22.py GXxHXxx_21.200 flexicharge-v2.2.bin
 ```
 
 生成器只保留两道断言：输入必须是上面的官方镜像（摘要锁定所有原始字节），输出必须等于

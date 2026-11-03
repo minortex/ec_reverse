@@ -16,6 +16,7 @@ EC：ITE **IT5571**（8051 内核，带 PD 子固件）。
 | [05 容量校准与充电上下限](05-calibration-and-limits.md) | 七状态校准机、`0x07B9`/`0x07D0`、FlexiCharge v2.2 | D1 + D0 |
 | [06 功耗与风扇](06-power-and-fans.md) | 模式表、候选仲裁、风扇曲线与 RPM、APExist/TCC | D1 + D0 |
 | [07 固件补丁](07-mods.md) | 补丁清单、hook/cave 规则、产物与验证、禁区 | 混合 |
+| [FlexiCharge v2.2 改动清单](ec-firmware-flexicharge-v2.2-20260729.md) | 四个补丁逐项、hook/cave 偏移、持久化槽与提交握手、回滚边界 | D1 + 寄存器级验证 |
 
 细节与逐条证据在 `_archive/`（按原主题保留子目录），本目录只写**当前结论**。
 

@@ -32,17 +32,16 @@ uv run python firmware_mods/GXxHXxx_21.200/build-from-official-20261103/patch_ec
 Applied in order: direct calibration commit, mode-locked voltage tiers, ApExist
 ignore, FlexiCharge v2.2 (lower charge threshold with hysteresis).
 
-### 3. Build the flasher, read before writing
+### 3. Build the flasher
 
 ```sh
 make -C tools/ec-flash
-sudo build/ec-flash --id                 # expect 20 40 14 20 (XMC XM25QH80)
-sudo build/ec-flash --dump machine.bin   # two reads, compared byte for byte
-sudo build/ec-flash --verify GXxHXxx_21.200
 ```
 
-`--dump` and `--verify` never write. Keep the dump: it is your recovery
-reference.
+> **Warning:** every `ec-flash` invocation enters Follow Mode: the fans spin up
+> to full speed, the built-in keyboard is locked, and the EC watchdog cuts power
+> after about three minutes. Use an external USB keyboard, and run **one**
+> command per session — do not queue up several reads and then the write.
 
 ### 4. Write
 
@@ -50,15 +49,13 @@ reference.
 sudo build/ec-flash --write flexicharge-v2.2.bin
 ```
 
-- Only changed 64 KiB blocks are touched: 16 × 4 KiB sector erase, erase check
-  for `FF`, 256-byte page program, then a full read-back compare.
-- Never cut power during erase/program. KBC is disabled while flashing; keep
-  hands off the keyboard during the 3-second countdown.
-- A successful write only arms a one-shot EC reset for the next shutdown
-  (`/run/ec-flash-reset-on-shutdown`). It does not reset immediately.
-- The write path is reconstructed from the vendor `ifux64.efi` and has not been
-  exercised on this project's hardware. Have an external SPI programmer and a
-  verified full dump before you try it.
+Erases, programs and verifies in one pass. Don't cut power. A successful write
+arms an EC reset for the next shutdown.
+
+The write path is reconstructed from the vendor `ifux64.efi` and untested on
+hardware — keep an external SPI programmer ready.
+
+Do any `--dump` / `--id` in a separate session beforehand.
 
 Requirements: Linux with `/dev/port`, root, `iopl(3)`, Python 3 + `uv`.
 
@@ -74,9 +71,14 @@ is silently ignored and charging stops only at the upper limit.
 | Path | Purpose |
 |---|---|
 | `tools/ec-flash/` | SPI flash read/verify/write (C) |
-| `tools/ec/i2ec_rw.py` | raw EC byte read/write over ports `0x681–0x683` |
+| `tools/ec/i2ec_rw.py` | raw EC byte read/write over ports `0x681–0x683`; reaches the full 16-bit XRAM, including `0x0800–0x0BFF` that the 4 KiB H2RAM window cannot see |
 | `tools/analysis/` | offline image analysis, disassembly annotation, Ghidra export |
 | `docs/00-overview.md` | document map, confidence levels, open questions |
 | `docs/02-flash-protocol.md` | Follow Mode / SPI protocol and tool constraints |
 | `docs/05-calibration-and-limits.md` | calibration state machine, `0x07B9`/`0x07D0` |
 | `docs/07-mods.md` | patch catalogue, byte ranges, validation gates |
+
+What FlexiCharge v2.2 actually changes — hook offsets, cave layout, the `0x0773`
+persistence slot, the `0xA5/0x78` commit handshake and rollback limits — is written
+up in [`docs/ec-firmware-flexicharge-v2.2-20260729.md`](docs/ec-firmware-flexicharge-v2.2-20260729.md)
+and summarised in [`docs/05-calibration-and-limits.md`](docs/05-calibration-and-limits.md).

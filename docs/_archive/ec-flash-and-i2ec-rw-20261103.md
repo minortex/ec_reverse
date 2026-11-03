@@ -97,7 +97,7 @@ sudo uv run python tools/i2ec_rw.py write 0x0340 0x14    # 写单字节
 1. 用 `tools/i2ec_rw.py dump 0x09c7 4` 等只读命令确认通道与隐藏状态
    （`stress = (EC[0x09C9] << 8) | EC[0x09CA]`）。
 2. 用 `tools/patch_ec_flexicharge_v22.py` 生成改版镜像（见
-   [`ec-firmware-flexicharge-v2.2-20260729.md`](ec-firmware-flexicharge-v2.2-20260729.md)）。
+   [`ec-firmware-flexicharge-v2.2-20260729.md`](../ec-firmware-flexicharge-v2.2-20260729.md)）。
 3. 用 `build/ec-flash --dump dumps/before.bin` 留两份一致基线。
 4. `sudo build/ec-flash --write patched.bin`，成功后按提示关机，由 helper 触发热复位。
 5. 重新起来后先用 `tools/i2ec_rw.py read 0x200d` 与 `mfc bat status` 交叉验证。
@@ -106,6 +106,6 @@ sudo uv run python tools/i2ec_rw.py write 0x0340 0x14    # 写单字节
 
 - 生成器：`tools/patch_ec_flexicharge_v22.py`、`tools/ec-flash/Makefile`、`tools/ec-flash/PKGBUILD`
 - 寄存器表：`docs/ec-register-map.md`
-- 补丁说明：[`ec-firmware-flexicharge-v2.2-20260729.md`](ec-firmware-flexicharge-v2.2-20260729.md)
+- 补丁说明：[`ec-firmware-flexicharge-v2.2-20260729.md`](../ec-firmware-flexicharge-v2.2-20260729.md)
 - 上游调查（协议、bank 映射、EFI 控制流）：ec_reverse 仓库 `docs/` 与
   `docs/firmware_mods/GXxHXxx_21.200/`
