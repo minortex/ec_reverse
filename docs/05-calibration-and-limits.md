@@ -154,17 +154,43 @@ OEM 0x47 / 0x48  →  EC[0x0A47] / EC[0x0A48]
 
 ### 迟滞
 
-```mermaid
-stateDiagram-v2
-  [*] --> Idle
-  Idle --> Charging: SOC <= low（phase=1, stop=0）
-  Charging --> Charging: low < SOC < high
-  Charging --> Halted: SOC >= high（phase=0, stop=1）
-  Halted --> Halted: low < SOC < high
-  Halted --> Charging: SOC <= low（phase=1, stop=0）
-```
+判定段 `bank2:D729`（gate 失败路径汇入 `D73A`）由周期任务约每秒调用一次，只做两件事：
 
-phase 不能省：它区分“首次在中间区间插入”和“低点启动后中途拔插”。
+- **`SOC <= low`**：`phase=1`、`stop=0` —— 开启/继续充电会话。
+- **`SOC >= high`**：`phase=0`、`stop=1` —— 结束充电会话。
+
+中间区间 `low < SOC < high` 不改 `phase`，只拿它决定 `stop`：会话已开启则保持充电，
+会话未开启则写 `stop=1`。
+
+于是行为是：
+
+| 当前 | `SOC <= low` | `low < SOC < high` | `SOC >= high` |
+|---|---|---|---|
+| **会话开启**（`phase=1, stop=0`） | 继续充 | 继续充 | 停充 |
+| **会话未开启**（`phase=0, stop=1`） | 开始充 | 继续停充（不补电） | 继续停充 |
+
+位定义：
+
+| 位 | 地址 | 含义 |
+|---|---|---|
+| `stop` | `EC[0x07B9].bit7` | 1 = 禁止充电（原厂语义） |
+| `phase` | `EC[0x07D0].bit7` | 1 = 充电会话已开启 |
+
+两个位都在 XRAM 里，插拔适配器本身不改它们，只触发下一次判定：
+
+| 事件 | 结果 |
+|---|---|
+| 上电后首次插入，SOC 在中间区间 | 会话未开启 → 停充 |
+| 从 `SOC<=low` 起充后中途拔插 | 会话已开启 → 继续充 |
+| EC 真掉电 / `0xFE` 复位 | `phase` 丢（按 0）；`stop` 由 `0x07B9` 恢复链重建，`low` 从 `0x0773` 恢复 |
+
+特殊情况不加迟滞：
+
+| 寄存器组合 | 行为 |
+|---|---|
+| `low=0, high>0` | upper-only：`SOC < high` 允许充，`>= high` 停 |
+| `low=0, high=0` | 禁用，等效不限 |
+| `high=0`、`low>=high`、`low>=96` | invalid：只清两个 bit7，充电不受限 |
 
 ### 实现
 
