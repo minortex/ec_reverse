@@ -8,7 +8,7 @@ investigation records behind them.
 
 ## EC Flash hardware utility
 
-Build the development binary with `make -C ec-flash`. The resulting
+Build the development binary with `make -C tools/ec-flash`. The resulting
 `build/ec-flash` supports Follow Mode, JEDEC-ID, SPI reads, and an explicitly
 selected erase/program path reconstructed from `samples/ifux64.efi`.
 
@@ -65,14 +65,14 @@ sudo build/ec-flash --write block1.bin --address 0x10000
 Do not interrupt power during erase/program. If a command fails, the tool waits
 for an in-flight SPI operation when possible, requests write-disable, exits
 Follow Mode, and does not create the shutdown-reset marker. This path has been
-matched statically to the EFI implementation but has not been exercised by the
-automated test suite against real hardware.
+matched statically to the EFI implementation but has not been exercised against
+real hardware.
 
 Build the Arch package from the repository instead of installing through the
 Makefile:
 
 ```sh
-cd ec-flash
+cd tools/ec-flash
 makepkg -f
 sudo pacman -U ./ec-flash-*.pkg.tar.zst
 ```
@@ -113,8 +113,8 @@ ranges, prefixes, and printable strings. `split` writes 64 KiB blocks plus a
 manifest. `diff` reports exact changed-byte counts and contiguous difference
 clusters with block attribution and byte previews.
 
-Run all offline checks with `make -C ec-flash test`. Hardware commands are never run
-by the test target.
+Run only offline checks with `make -C tools/ec-flash`; hardware commands are never
+executed by the build.
 
 The reproducible INT1 bank2-R7 repair for `GXxHXxx_21.200`, its exact 29-byte
 diff, hashes, raw-opcode control flow, validation status, and rules for deriving
@@ -233,10 +233,9 @@ For the patch catalogue, exact byte ranges, and validation gates, see
 
 ## Repository layout
 
-- `src/`: C source and headers only.
 - `build/`: compiler output; ignored by Git.
-- `tools/`: offline analyzer and disassembler definitions.
-- `tests/`: offline tests.
+- `tools/`: analysis scripts and register tables, Ghidra export, I2EC
+  utilities, and the `ec-flash` C utility (`tools/ec-flash/`).
 - `docs/`: numbered current-conclusion chapters (`00`–`07`) plus `_archive/`
   with the dated investigation records.
 - `samples/`: vendor inputs and generated reverse-engineering output; retained

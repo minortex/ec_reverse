@@ -173,7 +173,7 @@ phase 不能省：它区分“首次在中间区间插入”和“低点启动�
 - v2.2：增加持久化。`0x0DE54` 原 `12 DE 03` → `12 7E 6A`（先执行原 `LCALL bank0:DE03`，
   再按 `0x0773` 恢复 low 到 `0x07D0`）；另两处 hook `0x1D729 → 7E7B`、`0x1D73A → 7EAF`；
   代码洞 `0x7E6A–0x7F70`（263 B）。产物
-  SHA-256 `ff6683769da655f3cafa364ddc9cfcaad84ad28fa7122191d3fefad00a7a19cf`，26 项测试通过。
+  SHA-256 `ff6683769da655f3cafa364ddc9cfcaad84ad28fa7122191d3fefad00a7a19cf`。
 - 提交条件：仅当 `0x0773.bit7 == 0`，或 `(0x0773 & 0x7F) != (0x07D0 & 0x7F)` 才写，
   避免每 1–2 秒写 Flash；随后 `0x077E=0xA5`、`0x077F=0x78` 触发原厂提交。
 

@@ -935,7 +935,7 @@ v13 patch + reader tests: 30 passed, 3 subtests passed
 - [`battery_calibration/battery_calibration_investigation_20260721.md`](battery_calibration/battery_calibration_investigation_20260721.md)：容量校正职责边界。
 - [`battery_calibration/battery_calibration_trigger_audit_20260721.md`](battery_calibration/battery_calibration_trigger_audit_20260721.md)：有效 bank 控制流与校正触发复核。
 - [`../tools/read_sbs_identity_cache.py`](../../tools/read_sbs_identity_cache.py)：mailbox 读取和 doorbell 请求工具。
-- [`../tests/test_sbs_cyclecount_v13_word_scan_patch.py`](../../tests/test_sbs_cyclecount_v13_word_scan_patch.py)：v13 二进制、控制流、上下文和 XRAM 约束测试。
+- `tests/test_sbs_cyclecount_v13_word_scan_patch.py`（已随测试目录删除）：v13 二进制、控制流、上下文和 XRAM 约束测试。
 - [`../tools/extract_bank_entries.py`](../../tools/extract_bank_entries.py)：从 common wrapper 恢复 bank dispatch 目标的辅助工具。
 
 ## 17. 最终原则

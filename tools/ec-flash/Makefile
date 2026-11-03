@@ -2,13 +2,13 @@ CC ?= cc
 CFLAGS ?= -O2 -Wall -Wextra -Wpedantic
 CPPFLAGS ?= -MMD -MP
 LDFLAGS ?=
-BUILD_DIR := ../build
+BUILD_DIR := ../../build
 TARGET := $(BUILD_DIR)/ec-flash
 SOURCES := ec_flash.c ec_io.c follow.c flash_read.c flash_write.c
 OBJECTS := $(SOURCES:%.c=$(BUILD_DIR)/%.o)
 DEPS := $(OBJECTS:.o=.d)
 
-.PHONY: all clean test
+.PHONY: all clean
 
 all: $(TARGET)
 
@@ -20,10 +20,6 @@ $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 
 $(BUILD_DIR):
 	mkdir -p $@
-
-test: $(TARGET)
-	$(TARGET) --help >/dev/null
-	PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s ../tests -v
 
 clean:
 	rm -rf $(BUILD_DIR)

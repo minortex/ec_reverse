@@ -255,9 +255,9 @@ Normal 模式，`auxiliary >= 25 -> 250 mV/cell` 精确解释稳定的 16600 mV�
 
 ## 9. 主要依据
 
-- [`charge_voltage_17000_20260719-223700.md`](../../archive/docs/charge_voltage_17000_20260719-223700.md)：
+- [`charge_voltage_17000_20260719-223700.md`](charge_voltage_17000_20260719-223700.md)：
   本机 17 V 目标的现场寄存器证据和动态累计验证。
-- [`charge_voltage_limit_investigation.md`](../../archive/docs/charge_voltage_limit_investigation_20260720-211900.md)：目标计算、
+- [`charge_voltage_limit_investigation.md`](charge_voltage_limit_investigation_20260720-211900.md)：目标计算、
   模式/循环/stress 门槛、AC 和电池会话 gate。
 - [`battery_aging.md`](battery_aging.md)：容量、循环次数来源及老化补偿决策树。
 - [`i2ec_battery_investigation.md`](i2ec_battery_investigation.md)：寄存器访问范围、字段语义和
