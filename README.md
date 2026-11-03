@@ -189,13 +189,15 @@ H2RAM aperture is documented in the same chapter (§4–§5).
 It is separate from the 4 KiB H2RAM/MMIO interface and can address the complete
 16-bit EC memory space. The stock image configures I2EC as read-write during its
 initialization tables; a `43 -> 42` table patch can reduce it to read-only.
-`write` requires I2EC read-write mode and two explicit CLI confirmations:
+`write` writes one byte and, unless `--force` is given, first checks that
+`EC[0x200D]` reports I2EC read-write mode (`SPCTRL1 & 3 == 3`). There is no
+confirmation prompt; the tool is a raw byte interface.
 
 ```sh
 sudo python3 tools/i2ec_rw.py read 0x09c9
+sudo python3 tools/i2ec_rw.py read 0x0439 0x0438   # high, low -> combined word
 sudo python3 tools/i2ec_rw.py dump 0x09c7 4
-sudo python3 tools/i2ec_rw.py write 0x0000 0x00 \
-  --allow-write --confirm I_UNDERSTAND_I2EC_WRITES
+sudo python3 tools/i2ec_rw.py write 0x0340 0x14
 ```
 
 The write example documents syntax only. Do not write unknown RAM or peripheral

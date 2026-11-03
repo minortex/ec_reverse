@@ -64,5 +64,94 @@ class I2ECTests(unittest.TestCase):
             TOOL.I2EC(FakePort(), 0x1000)
 
 
+class MockI2EC:
+    def __init__(self, memory=None):
+        self.memory = memory or {}
+        self.writes = []
+
+    def read(self, address):
+        return self.memory.get(address, 0)
+
+    def write(self, address, value):
+        self.writes.append((address, value))
+        self.memory[address] = value
+
+
+class CliTests(unittest.TestCase):
+    def test_formatting_helpers(self):
+        self.assertEqual(TOOL.describe_address(0x04AB), "0x04AB (1195)")
+        self.assertEqual(TOOL.describe_byte(0x50), "0x50 (80)")
+        self.assertEqual(TOOL.describe_word(0x4268), "0x4268 (17000)")
+        self.assertEqual(TOOL.format_address(0x04AB), "0x04AB")
+        self.assertEqual(TOOL.format_byte(0x50), "0x50")
+        self.assertEqual(TOOL.format_word(0x4268), "0x4268")
+
+    def test_read_single_byte(self):
+        import contextlib
+        import io
+        from unittest import mock
+
+        mock_i2ec = MockI2EC({0x04AB: 0x50})
+        buf = io.StringIO()
+        with mock.patch.object(TOOL, "open_i2ec", contextlib.contextmanager(lambda *a, **kw: (yield mock_i2ec))), \
+             contextlib.redirect_stdout(buf):
+            TOOL.main(["read", "0x04ab"])
+
+        self.assertIn("XRAM[0x04AB (1195)] = 0x50 (80)", buf.getvalue())
+
+    def test_read_two_bytes_word(self):
+        import contextlib
+        import io
+        from unittest import mock
+
+        mock_i2ec = MockI2EC({0x0439: 0x42, 0x0438: 0x68})
+        buf = io.StringIO()
+        with mock.patch.object(TOOL, "open_i2ec", contextlib.contextmanager(lambda *a, **kw: (yield mock_i2ec))), \
+             contextlib.redirect_stdout(buf):
+            TOOL.main(["read", "0x0439", "0x0438"])
+
+        self.assertIn("XRAM[0x0439 (1081):0x0438 (1080)] = 0x4268 (17000)", buf.getvalue())
+
+    def test_write_byte(self):
+        import contextlib
+        import io
+        from unittest import mock
+
+        mock_i2ec = MockI2EC({0x200D: 0x03, 0x0340: 0x00})
+        buf = io.StringIO()
+        with mock.patch.object(TOOL, "open_i2ec", contextlib.contextmanager(lambda *a, **kw: (yield mock_i2ec))), \
+             contextlib.redirect_stdout(buf):
+            TOOL.main(["write", "0x0340", "0x14"])
+
+        self.assertIn("XRAM[0x0340 (832)] : 0x00 (0) -> 0x14 (20)", buf.getvalue())
+        self.assertEqual(mock_i2ec.writes, [(0x0340, 0x14)])
+
+    def test_dump_range(self):
+        import contextlib
+        import io
+        from unittest import mock
+
+        mock_i2ec = MockI2EC({0x0438: 0x68, 0x0439: 0x42})
+        buf = io.StringIO()
+        with mock.patch.object(TOOL, "open_i2ec", contextlib.contextmanager(lambda *a, **kw: (yield mock_i2ec))), \
+             contextlib.redirect_stdout(buf):
+            TOOL.main(["dump", "0x0438", "2"])
+
+        output = buf.getvalue().splitlines()
+        self.assertEqual(len(output), 2)
+        self.assertIn("XRAM[0x0438 (1080)] = 0x68 (104)", output[0])
+        self.assertIn("XRAM[0x0439 (1081)] = 0x42 (66)", output[1])
+
+    def test_no_arguments_prints_help(self):
+        import contextlib
+        import io
+
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            TOOL.main([])
+        self.assertIn("usage:", buf.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()
+
